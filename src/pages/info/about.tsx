@@ -7,7 +7,7 @@ import {
   Stat,
   Topic,
   Visual,
-} from "@/components/about-page";
+} from "@/components/static/about";
 
 const About = () => {
   useEffect(() => {
@@ -22,7 +22,6 @@ const About = () => {
 
   return (
     <div className="layout" data-scroll-container>
-      {/* Header section is waiting: Explore, Contact, Join */}
       <Hero />
       <Intro />
       <Stat />

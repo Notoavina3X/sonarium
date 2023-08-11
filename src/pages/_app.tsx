@@ -1,5 +1,6 @@
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { NextUIProvider } from "@nextui-org/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type AppType } from "next/app";
@@ -9,11 +10,18 @@ import { Toaster } from "sonner";
 
 import { montserrat, delaGothic } from "@/config/fonts";
 import Head from "next/head";
+import Loader from "@/components/Loader";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
   return (
     <SessionProvider session={session}>
       <Head>
@@ -30,7 +38,13 @@ const MyApp: AppType<{ session: Session | null }> = ({
             className={`${montserrat.variable} ${delaGothic.variable} font-sans antialiased`}
           >
             <Toaster richColors />
-            <Component {...pageProps} />
+            {loading ? (
+              <div className="grid h-screen w-screen place-items-center">
+                <Loader size="lg" color="primary" />
+              </div>
+            ) : (
+              <Component {...pageProps} />
+            )}
           </main>
         </NextThemesProvider>
       </NextUIProvider>

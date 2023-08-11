@@ -1,5 +1,5 @@
 import { Card, CardHeader } from "@nextui-org/react";
-import { Pattern5, Pattern6, Pattern7 } from "../patterns";
+import { Pattern5, Pattern6, Pattern7 } from "@/components/static/patterns";
 
 function Visual() {
   return (

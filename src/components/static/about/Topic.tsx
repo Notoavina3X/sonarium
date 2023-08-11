@@ -14,7 +14,7 @@ function Topic() {
         </h1>
         <div className="absolute -left-8 -top-6 z-10">
           <Icon
-            icon="solar:play-circle-bold"
+            icon="solar:global-line-duotone"
             className="scale-150 transform text-6xl text-content4 dark:text-primary"
           />
         </div>

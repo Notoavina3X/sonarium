@@ -1,4 +1,4 @@
-import { Pattern2, Pattern3, Pattern4 } from "../patterns";
+import { Pattern2, Pattern3, Pattern4 } from "@/components/static/patterns";
 
 function Stat() {
   return (

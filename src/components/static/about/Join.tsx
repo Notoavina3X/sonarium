@@ -1,5 +1,5 @@
 import { Button } from "@nextui-org/react";
-import { Pattern8 } from "../patterns";
+import { Pattern8 } from "@/components/static/patterns";
 
 function Join() {
   return (
