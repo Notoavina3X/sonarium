@@ -1,5 +1,7 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import { api } from "@/utils/api";
+// import YoutubeEmbed from "@/components/global/YoutubeEmbed";
+// import SpotifyEmbed from "@/components/global/SpotifyEmbed";
 
 export default function Home() {
   return (
@@ -29,6 +31,11 @@ function AuthShowcase() {
       >
         {sessionData ? "Sign out" : "Sign in"}
       </button>
+
+      {/* Usage of embedded YouTube and Spotify player */}
+
+      {/* <YoutubeEmbed songId="hwATO9UMiw8" />
+      <SpotifyEmbed songId="1qkwBaQUYh3HeUlUlGu8YM" /> */}
     </div>
   );
 }

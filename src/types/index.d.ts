@@ -18,3 +18,5 @@ export type MainNavItem = NavItem;
 export type StaticConfig = {
   mainNav: MainNavItem[];
 };
+
+export type ToastTheme = "dark" | "light" | "system" | undefined;

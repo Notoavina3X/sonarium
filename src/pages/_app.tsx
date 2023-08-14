@@ -10,13 +10,15 @@ import { Toaster } from "sonner";
 
 import { montserrat, delaGothic } from "@/config/fonts";
 import Head from "next/head";
-import Loader from "@/components/Loader";
+import Loader from "@/components/global/Loader";
+import useToastTheme from "@/hooks/useToastTheme";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
   const [loading, setLoading] = useState(true);
+  const { toastTheme } = useToastTheme();
 
   useEffect(() => {
     setLoading(false);
@@ -37,7 +39,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
           <main
             className={`${montserrat.variable} ${delaGothic.variable} font-sans antialiased`}
           >
-            <Toaster richColors />
+            <Toaster richColors theme={toastTheme} closeButton />
             {loading ? (
               <div className="grid h-screen w-screen place-items-center">
                 <Loader size="lg" color="primary" />
