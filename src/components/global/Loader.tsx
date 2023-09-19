@@ -1,27 +1,11 @@
-import { tv } from "@nextui-org/react";
-import React from "react";
+import { loader } from "../variants";
 
 type LoaderProps = {
   size: "sm" | "md" | "lg";
   color: "primary" | "default";
 };
 
-const loader = tv({
-  base: "aspect-square ps-[2px]",
-  variants: {
-    color: {
-      primary: "text-primary",
-      default: "text-foreground-300",
-    },
-    size: {
-      sm: "h-3.5",
-      md: "h-5",
-      lg: "h-7",
-    },
-  },
-});
-
-const Loader: React.FC<LoaderProps> = ({ size = "md", color = "default" }) => {
+function Loader({ size = "md", color = "default" }: LoaderProps) {
   return (
     <div className="flex">
       <svg
@@ -67,6 +51,6 @@ const Loader: React.FC<LoaderProps> = ({ size = "md", color = "default" }) => {
       </svg>
     </div>
   );
-};
+}
 
 export default Loader;

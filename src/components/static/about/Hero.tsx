@@ -20,7 +20,7 @@ function Hero() {
       <Navbar ref={headerRef} />
       <section
         id="hero"
-        className="wrapper relative mt-[2px] overflow-hidden rounded-2xl bg-black dark:bg-primary"
+        className="wrapper relative mt-[2px] overflow-hidden rounded-2xl bg-foreground dark:bg-primary"
         style={{ height: `calc(100vh - ${offsetHeight}px)` }}
       >
         <div

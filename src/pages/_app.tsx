@@ -1,6 +1,5 @@
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
-import { useState, useEffect } from "react";
 import { NextUIProvider } from "@nextui-org/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type AppType } from "next/app";
@@ -10,19 +9,18 @@ import { Toaster } from "sonner";
 
 import { montserrat, delaGothic } from "@/config/fonts";
 import Head from "next/head";
-import Loader from "@/components/global/Loader";
 import useToastTheme from "@/hooks/useToastTheme";
+import { useRouter } from "next/router";
+import Layout from "@/layouts/core/layout";
+import PrivateRoute from "@/utils/private-route";
+import { Provider } from "jotai";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
   const { toastTheme } = useToastTheme();
-
-  useEffect(() => {
-    setLoading(false);
-  }, []);
 
   return (
     <SessionProvider session={session}>
@@ -40,12 +38,17 @@ const MyApp: AppType<{ session: Session | null }> = ({
             className={`${montserrat.variable} ${delaGothic.variable} font-sans antialiased`}
           >
             <Toaster richColors theme={toastTheme} closeButton />
-            {loading ? (
-              <div className="grid h-screen w-screen place-items-center">
-                <Loader size="lg" color="primary" />
-              </div>
-            ) : (
+            {router.pathname.startsWith("/info") ||
+            router.pathname.startsWith("/auth") ? (
               <Component {...pageProps} />
+            ) : (
+              <Provider>
+                <PrivateRoute>
+                  <Layout>
+                    <Component {...pageProps} />
+                  </Layout>
+                </PrivateRoute>
+              </Provider>
             )}
           </main>
         </NextThemesProvider>

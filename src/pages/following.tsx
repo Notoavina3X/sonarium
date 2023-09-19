@@ -8,20 +8,18 @@ import Head from "next/head";
 // <YoutubeEmbed songId="hwATO9UMiw8" />
 // <SpotifyEmbed songId="1qkwBaQUYh3HeUlUlGu8YM" />
 
-export default function Home() {
+export default function Following() {
   const { data: sessionData } = useSession();
 
   return (
     <div className="min-h-screen grow">
       <Head>
-        <title>For you | Sonarium</title>
+        <title>Following | Sonarium</title>
       </Head>
       <Navbar>
         <div>
-          <h1 className="text-xl font-bold">For you</h1>
-          <span className="text-xs italic text-foreground-500">
-            &quot;Know them better&quot;
-          </span>
+          <h1 className="text-xl font-bold">Following</h1>
+          <span className="text-xs text-foreground-500">1 Following</span>
         </div>
       </Navbar>
       <section className="flex flex-col gap-2">

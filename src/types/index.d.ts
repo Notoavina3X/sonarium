@@ -1,3 +1,24 @@
+export type NavItem = {
+  title: string;
+  href: string;
+  disabled?: boolean;
+};
+
+export type NavLink = {
+  title: string;
+  href: string;
+  icon: string;
+  isActive: boolean;
+};
+
+export type MainNavItem = NavItem;
+
+export type MainNavLink = NavLink;
+
+export type StaticConfig = {
+  mainNav: MainNavItem[];
+};
+
 export type SiteConfig = {
   name: string;
   description: string;
@@ -5,18 +26,7 @@ export type SiteConfig = {
     twitter: string;
     github: string;
   };
-};
-
-export type NavItem = {
-  title: string;
-  href: string;
-  disabled?: boolean;
-};
-
-export type MainNavItem = NavItem;
-
-export type StaticConfig = {
-  mainNav: MainNavItem[];
+  mainNav: MainNavLink[];
 };
 
 export type ToastTheme = "dark" | "light" | "system" | undefined;

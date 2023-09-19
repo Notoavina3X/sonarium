@@ -1,10 +1,10 @@
 import { Icon } from "@iconify/react";
 import { Tooltip } from "@nextui-org/react";
-import React from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = React.useState(false);
+function CopyButton({ text }: { text: string | undefined }) {
+  const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
     navigator.clipboard
@@ -25,7 +25,10 @@ function CopyButton({ text }: { text: string }) {
       {copied ? (
         <Icon icon="tabler:check" />
       ) : (
-        <button onClick={copyToClipboard} className="active:outline-none">
+        <button
+          onClick={() => void copyToClipboard()}
+          className="active:outline-none"
+        >
           <Icon icon="solar:copy-bold" />
         </button>
       )}

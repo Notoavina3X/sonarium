@@ -4,7 +4,7 @@ export const staticConfig: StaticConfig = {
   mainNav: [
     {
       title: "Explore",
-      href: "/#",
+      href: "/",
     },
     {
       title: "Connect",

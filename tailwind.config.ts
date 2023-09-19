@@ -20,6 +20,7 @@ export default {
       themes: {
         light: {
           colors: {
+            background: "#e4e4e7",
             primary: {
               50: "#ffe9dd",
               100: "#ffc5af",
@@ -32,13 +33,14 @@ export default {
               800: "#4f1100",
               900: "#210300",
 
-              foreground: "#FFFFFF",
+              foreground: "#e4e4e7",
               DEFAULT: "#e63d00",
             },
           },
         },
         dark: {
           colors: {
+            background: "#0d0d11",
             primary: {
               50: "#210300",
               100: "#4f1100",
@@ -51,7 +53,7 @@ export default {
               800: "#ffc5af",
               900: "#ffe9dd",
 
-              foreground: "#FFFFFF",
+              foreground: "#0d0d11",
               DEFAULT: "#e63d00",
             },
           },

@@ -1,6 +1,4 @@
-import React from "react";
-
-const Pattern5: React.FC<{ fill: string }> = ({ fill }) => {
+function Pattern5({ fill }: { fill: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -21,6 +19,6 @@ const Pattern5: React.FC<{ fill: string }> = ({ fill }) => {
       />
     </svg>
   );
-};
+}
 
 export default Pattern5;

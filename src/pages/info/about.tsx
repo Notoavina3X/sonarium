@@ -8,6 +8,7 @@ import {
   Topic,
   Visual,
 } from "@/components/static/about";
+import Head from "next/head";
 
 const About = () => {
   useEffect(() => {
@@ -22,6 +23,9 @@ const About = () => {
 
   return (
     <div className="layout" data-scroll-container>
+      <Head>
+        <title>Sonarium | About</title>
+      </Head>
       <Hero />
       <Intro />
       <Stat />

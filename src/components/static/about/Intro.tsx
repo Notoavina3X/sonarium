@@ -9,7 +9,7 @@ function Intro() {
       data-scroll-speed=".2"
       className="wrapper"
     >
-      <div className="grid gap-3 rounded-2xl bg-primary px-5 py-20 text-stone-950 dark:bg-white md:grid-cols-2 md:gap-0 md:px-10 md:py-24 lg:px-32">
+      <div className="grid gap-3 rounded-2xl bg-primary px-5 py-20 dark:bg-zinc-200 dark:text-background md:grid-cols-2 md:gap-0 md:px-10 md:py-24 lg:px-32">
         <div className="wrapper flex gap-3">
           <Avatar
             src="/image/who.webp"

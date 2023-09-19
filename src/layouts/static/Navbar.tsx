@@ -1,4 +1,4 @@
-import React from "react";
+import { useState, useEffect, forwardRef } from "react";
 
 // Importing components from "@nextui-org/react" library
 import {
@@ -16,14 +16,12 @@ import { staticConfig } from "@/config/static";
 import ThemeSwitch from "@/components/static/ThemeSwitch";
 
 // Creating the Navbar component
-const Navbar = React.forwardRef<HTMLElement>((props, ref) => {
+const Navbar = forwardRef<HTMLElement>((props, ref) => {
   // State to track if the menu is open or closed
-  const [isMenuOpen, setIsMenuOpen] = React.useState<boolean | undefined>(
-    false
-  );
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean | undefined>(false);
 
   // Handle scroll event when the menu is open
-  React.useEffect(() => {
+  useEffect(() => {
     const handleScroll = (event: Event) => {
       // Prevent scrolling when the menu is open
       if (!isMenuOpen) {
@@ -50,7 +48,7 @@ const Navbar = React.forwardRef<HTMLElement>((props, ref) => {
       className={cn(
         "z-50 after:absolute after:bottom-0 after:h-[1px] after:w-[80%] after:bg-gradient-to-r after:from-transparent after:via-background after:to-transparent after:content-['']",
         !isMenuOpen &&
-          "rounded-2xl bg-black font-semibold text-primary dark:bg-primary dark:text-black",
+          "rounded-2xl bg-foreground font-semibold text-primary dark:bg-primary dark:text-background",
         isMenuOpen && "bg-background text-foreground"
       )}
       isBlurred={false}

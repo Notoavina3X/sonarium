@@ -14,12 +14,6 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Example {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-}
-
 // Necessary for Next auth
 model Account {
     id                String  @id @default(cuid())
@@ -55,6 +49,101 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
+
+    // Non-next-auth
+    username      String?        @unique @default("")
+    followers     User[]         @relation(name: "Followers")
+    follows       User[]         @relation(name: "Followers")
+    posts         Post[]
+    likes         Like[]
+    comments      Comment[]
+    notifications Notification[]
+    commentLikes  CommentLike[]
+    bookmarks     Bookmark[]
+}
+
+model Post {
+    id          String     @id @default(cuid())
+    userId      String
+    sharedId    String?
+    description String?
+    tags        String?
+    song        Json?
+    createdAt   DateTime   @default(now())
+    sharedPost  Post?      @relation(name: "Shares", fields: [sharedId], references: [id], onDelete: Cascade)
+    user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    likes       Like[]
+    comments    Comment[]
+    subposts    Post[]     @relation(name: "Shares")
+    bookmarks   Bookmark[]
+
+    @@unique([createdAt, id])
+    @@index([userId])
+}
+
+model Like {
+    userId    String
+    postId    String
+    commentId String?
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+    comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+    @@id([userId, postId])
+    @@index([userId])
+    @@index([postId])
+}
+
+model CommentLike {
+    userId    String
+    commentId String
+    user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+    @@id([userId, commentId])
+    @@index([userId])
+    @@index([commentId])
+}
+
+model Comment {
+    id            String        @id @default(cuid())
+    userId        String
+    postId        String
+    parentId      String?
+    content       String
+    createdAt     DateTime      @default(now())
+    user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+    post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+    parentComment Comment?      @relation(name: "Replies", fields: [parentId], references: [id], onDelete: Cascade)
+    likes         Like[]
+    replies       Comment[]     @relation(name: "Replies")
+    commentLikes  CommentLike[]
+
+    @@unique([createdAt, userId, postId])
+    @@index([userId])
+    @@index([postId])
+}
+
+model Bookmark {
+    userId    String
+    postId    String
+    createdAt DateTime @default(now())
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+    @@id([userId, postId])
+}
+
+model Notification {
+    id        String   @id @default(cuid())
+    userId    String
+    message   String
+    isRead    Boolean  @default(false)
+    createdAt DateTime @default(now())
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([createdAt, userId])
+    @@index([userId])
 }
 
 model VerificationToken {

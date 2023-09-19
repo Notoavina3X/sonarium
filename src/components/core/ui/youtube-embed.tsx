@@ -1,50 +1,17 @@
-import { env } from "@/env.mjs";
 import { Icon } from "@iconify/react";
 import { CircularProgress, Image, Link } from "@nextui-org/react";
-import React from "react";
+import { useState, useEffect, createRef } from "react";
 import YouTube from "react-youtube";
-import CopyButton from "./CopyButton";
+import CopyButton from "@/components/global/copy-button";
+import { type TrackSelected } from "@/atoms/track-selected-atom";
 
-type videoDetailsType = {
-  title: string;
-  thumbnail: string;
-  channelId: string;
-  channelTitle: string;
-};
+function YoutubeEmbed({ track }: { track: TrackSelected }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
 
-function YoutubeEmbed({ songId }: { songId: string }) {
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [currentTime, setCurrentTime] = React.useState(0);
-  const [videoDetails, setVideoDetails] =
-    React.useState<videoDetailsType | null>(null);
-  const videoLink = `https://www.youtube.com/watch?v=${songId}`;
-  const url = "https://www.googleapis.com/youtube/v3/videos?";
+  const playerRef = createRef<YouTube>();
 
-  const playerRef = React.createRef<YouTube>();
-
-  const fetchDetails = React.useCallback(() => {
-    fetch(
-      `${url}id=${songId}&key=${env.NEXT_PUBLIC_YOUTUBE_API_KEY}&part=snippet`
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const video = data.items[0];
-        const title = video.snippet.title;
-        const thumbnail = video.snippet.thumbnails.default.url;
-        const channelId = video.snippet.channelId;
-        const channelTitle = video.snippet.channelTitle;
-        setVideoDetails({ title, thumbnail, channelId, channelTitle });
-      })
-      .catch((error) => {
-        console.error("Une erreur s'est produite :", error);
-      });
-  }, [songId]);
-
-  React.useEffect(() => {
-    fetchDetails();
-  }, [fetchDetails]);
-
-  React.useEffect(() => {
+  useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
     if (isPlaying) {
@@ -89,35 +56,33 @@ function YoutubeEmbed({ songId }: { songId: string }) {
     },
   };
 
-  const handleLinkClick = () => {
-    window.open(videoLink, "_blank");
-  };
-
   return (
     <div className="relative grid h-20 w-full grid-cols-[64px_auto] gap-4 rounded-xl bg-red-600/20 p-2">
       <Image
-        src={videoDetails?.thumbnail}
-        alt={videoDetails?.title}
+        as={Link}
+        href={track?.url}
+        isExternal
+        src={track?.image}
+        alt={track?.title}
         className="aspect-square w-[64px] cursor-pointer rounded-lg"
-        onClick={handleLinkClick}
       />
       <div className="grid grid-cols-[auto_64px]">
         <div className="flex h-full flex-col justify-end gap-1 overflow-hidden">
           <Link
-            href={videoLink}
+            href={track?.url}
             isExternal
             className="max-w-max flex-none cursor-pointer truncate text-sm font-bold leading-[1.5ch] text-foreground hover:underline"
-            title={videoDetails?.title}
+            title={track?.title}
           >
-            {videoDetails?.title}
+            {track?.title}
           </Link>
           <Link
-            href={`https://www.youtube.com/channel/${videoDetails?.channelId}`}
+            href={`https://www.youtube.com/channel/${track?.authorId}`}
             isExternal
             className="max-w-max flex-none cursor-pointer truncate text-[10px] font-bold text-foreground opacity-70 hover:underline"
-            title={videoDetails?.channelTitle}
+            title={track?.author}
           >
-            {videoDetails?.channelTitle}
+            {track?.author}
           </Link>
           <span className="max-w-max flex-none rounded-[2px] bg-foreground/75 px-[5px] py-[2px] text-[9px] font-bold text-background">
             PREVIEW
@@ -131,7 +96,7 @@ function YoutubeEmbed({ songId }: { songId: string }) {
           >
             <Icon icon="simple-icons:youtube" />
           </Link>
-          <CopyButton text={videoLink} />
+          <CopyButton text={track?.url} />
           <button
             onClick={togglePlayPause}
             className="relative z-30 translate-x-1 translate-y-1 transform rounded-full text-4xl"
@@ -156,7 +121,7 @@ function YoutubeEmbed({ songId }: { songId: string }) {
       </div>
 
       <YouTube
-        videoId="hwATO9UMiw8"
+        videoId={track?.id}
         opts={youtubeOpts}
         onStateChange={onStateChange}
         ref={playerRef}
