@@ -33,9 +33,9 @@ export const siteConfig: SiteConfig = {
       isActive: false,
     },
     {
-      title: "Favoris",
-      href: "/favoris",
-      icon: "star",
+      title: "Bookmarks",
+      href: "/bookmarks",
+      icon: "bookmark",
       isActive: false,
     },
     {

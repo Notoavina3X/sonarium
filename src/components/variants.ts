@@ -36,6 +36,16 @@ export const userVariant = {
       },
     },
   }),
+  avatar: tv({
+    base: "aspect-square w-full",
+    variants: {
+      radius: {
+        sm: "rounded-lg",
+        md: "rounded-xl",
+        lg: "rounded-2xl",
+      },
+    },
+  }),
   name: {
     skeleton: tv({
       base: "w-28 my-1",

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useAtom } from "jotai";
-import { isModalOpenAtom } from "@/atoms/modalAtoms";
 import {
   Avatar,
   Button,
@@ -25,23 +24,56 @@ import SearchBar from "./search-bar";
 import { type Key, useState, useEffect, useCallback, useMemo } from "react";
 import spotifyApi from "@/lib/spotifyApi";
 import { getToken } from "@/utils/spotify-get-token";
-import { tracklistAtom } from "@/atoms/spotify-tracklist-atom";
 import User from "../ui/user";
 import {
+  isModalOpenAtom,
   type TrackSelected,
   trackSelectedAtom,
-} from "@/atoms/track-selected-atom";
+  tracklistAtom,
+} from "@/store";
 import { trackSelectedIcon } from "@/components/variants";
 import EmbedPlayer from "../ui/embed-player";
 import { toLower } from "lodash";
+import { api } from "@/utils/api";
+import { toast } from "sonner";
+import EmptyResult from "@/components/global/empty-result";
+import { getTags } from "@/utils/methods";
 
 function NewPost() {
   const { data: sessionData } = useSession();
   const user = sessionData?.user;
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
   const [isModalOpen, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
+  const [tracklist, setTracklist] = useAtom(tracklistAtom);
+  const [description, setDescription] = useState<string | undefined>(undefined);
+  const [tags, setTags] = useState<Array<string>>([]);
+
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const onModalOpenChange = () => setIsModalOpen(!isModalOpen);
+
+  const createPost = api.post.create.useMutation({
+    onSuccess: (newPost) => {
+      setIsModalOpen(false);
+      setTrackSelected(null);
+      toast.success("Post created successfully");
+    },
+    onError: () => {
+      toast.error("Error appeared while posting");
+    },
+  });
+
+  const handleSubmit = () => {
+    createPost.mutate({ description, track: trackSelected, tags });
+  };
+
+  useEffect(() => {
+    if (description && description?.length > 0) {
+      setTags(getTags(description));
+    } else {
+      setTags([]);
+    }
+  }, [description]);
 
   return (
     <>
@@ -78,6 +110,8 @@ function NewPost() {
                   ],
                   input: "text-xl",
                 }}
+                value={description}
+                onValueChange={setDescription}
               />
             </div>
             {trackSelected ? (
@@ -85,19 +119,20 @@ function NewPost() {
                 <EmbedPlayer track={trackSelected} />
                 <Button
                   isIconOnly
-                  color="primary"
-                  variant="flat"
                   size="sm"
-                  className="absolute -left-2.5 -top-2.5"
+                  className="absolute -left-3 -top-3 z-40"
                   onPress={() => void setTrackSelected(null)}
                 >
-                  <Icon icon="ph:minus" className="text-lg" />
+                  <Icon icon="ph:minus" />
                 </Button>
               </div>
             ) : (
               <button
                 className="flex h-20 w-full items-center justify-center gap-3 rounded-lg border-2 border-dashed border-primary-300 font-bold text-primary opacity-70 hover:bg-primary/20"
-                onClick={onOpen}
+                onClick={() => {
+                  onOpen();
+                  setTracklist([]);
+                }}
               >
                 <Icon icon="ph:plus-bold" className="text-xl" />
                 <span>Add Track</span>
@@ -109,7 +144,8 @@ function NewPost() {
               color="primary"
               className="font-semibold"
               size="sm"
-              onPress={() => void setIsModalOpen(false)}
+              onPress={() => void handleSubmit()}
+              isLoading={createPost.isLoading}
             >
               Post
             </Button>
@@ -178,6 +214,8 @@ const AddTrack = () => {
     new Set(["default"])
   );
   const [query, setQuery] = useState<string>("");
+  const [placeholder, setPlaceholder] = useState<string | undefined>(undefined);
+
   const [trackList, setTrackList] = useAtom(tracklistAtom);
 
   const selectedValue = useMemo(
@@ -195,16 +233,32 @@ const AddTrack = () => {
     setTrackList([]);
   };
 
+  const handleTabChange = (key: Key) => {
+    setSelectedTab(key);
+    setTrackList([]);
+  };
+
+  useEffect(() => {
+    if (selectedTab === "spotify") setPlaceholder(`Search by ${selectedValue}`);
+    else setPlaceholder("Search on YouTube");
+  }, [selectedTab, selectedValue]);
+
   return (
     <>
       <div className="sticky -top-2 z-50 mr-2 flex gap-2 bg-content3 p-2 pr-0 dark:bg-content1">
         <SearchBar
+          placeholder={placeholder}
           handleSearch={handleSearch}
           onClear={() => setTrackList([])}
         />
         <Dropdown placement="bottom-end">
           <DropdownTrigger>
-            <Button isIconOnly size="lg" variant="light">
+            <Button
+              isIconOnly
+              size="lg"
+              variant="light"
+              isDisabled={selectedTab === "youtube"}
+            >
               <Icon icon="solar:tuning-2-linear" />
             </Button>
           </DropdownTrigger>
@@ -215,10 +269,41 @@ const AddTrack = () => {
             selectedKeys={selectedFilter}
             onSelectionChange={(value) => handleSelectionChange(value)}
           >
-            <DropdownItem key="default">By default</DropdownItem>
-            <DropdownItem key="track">By track</DropdownItem>
-            <DropdownItem key="artist">By artist</DropdownItem>
-            <DropdownItem key="album">By album</DropdownItem>
+            <DropdownItem
+              key="default"
+              startContent={
+                <Icon
+                  icon="solar:archive-minimalistic-linear"
+                  className="text-lg"
+                />
+              }
+            >
+              By default
+            </DropdownItem>
+            <DropdownItem
+              key="track"
+              startContent={
+                <Icon icon="iconamoon:music-1-light" className="text-lg" />
+              }
+            >
+              By track
+            </DropdownItem>
+            <DropdownItem
+              key="artist"
+              startContent={
+                <Icon icon="iconamoon:music-artist-light" className="text-lg" />
+              }
+            >
+              By artist
+            </DropdownItem>
+            <DropdownItem
+              key="album"
+              startContent={
+                <Icon icon="iconamoon:music-album-light" className="text-lg" />
+              }
+            >
+              By album
+            </DropdownItem>
           </DropdownMenu>
         </Dropdown>
       </div>
@@ -228,7 +313,7 @@ const AddTrack = () => {
         size="sm"
         color="primary"
         selectedKey={selectedTab}
-        onSelectionChange={setSelectedTab}
+        onSelectionChange={handleTabChange}
         classNames={{
           base: ["sticky", "top-12", "z-50", "bg-content3 dark:bg-content1"],
         }}
@@ -255,7 +340,7 @@ const AddTrack = () => {
           }
           className="font-semibold"
         >
-          <SearchYoutube term={query} findBy={selectedValue} />
+          <SearchYoutube term={query} />
         </Tab>
       </Tabs>
     </>
@@ -270,34 +355,124 @@ const SearchSpotify = ({ term, findBy }: SearchSpotifyProps) => {
   const [trackList, setTrackList] = useAtom(tracklistAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
 
-  const fetchTracks = useCallback(async () => {
-    const accessToken = await getToken();
-    const param = findBy === "default" ? term : `${findBy}:${term}`;
+  const fetchTracks = useCallback(
+    async (query: string) => {
+      const accessToken = await getToken();
+      const param = findBy === "default" ? query : `${findBy}:${query}`;
 
-    try {
-      const response = await spotifyApi.searchTracks(param, { limit: 10 });
-      setTrackList((oldTrackList: any[]) => [
-        ...oldTrackList,
-        ...response.tracks.items,
-      ]);
-      console.log(response.tracks.items);
-    } catch (error: any) {
-      if (error.status === 401) {
-        try {
-          spotifyApi.setAccessToken(accessToken);
-          const response = await spotifyApi.searchTracks(param, { limit: 10 });
-          setTrackList((oldTrackList: any[]) => [
-            ...oldTrackList,
-            ...response.tracks.items,
-          ]);
-        } catch (error) {
+      try {
+        const response = await spotifyApi.searchTracks(param, { limit: 10 });
+        setTrackList((oldTrackList: any[]) => [
+          ...oldTrackList,
+          ...response.tracks.items,
+        ]);
+      } catch (error: any) {
+        if (error.status === 401) {
+          try {
+            spotifyApi.setAccessToken(accessToken);
+            const response = await spotifyApi.searchTracks(param, {
+              limit: 10,
+            });
+            setTrackList((oldTrackList: any[]) => [
+              ...oldTrackList,
+              ...response.tracks.items,
+            ]);
+          } catch (error) {
+            console.error(error);
+          }
+        } else {
           console.error(error);
         }
-      } else {
-        console.error(error);
       }
+    },
+    [findBy, setTrackList]
+  );
+
+  const handleTrackClick = (track: TrackSelected) => {
+    setTrackSelected(track);
+  };
+
+  useEffect(() => {
+    if (term) {
+      fetchTracks(term).catch((err) => console.error(err));
     }
-  }, [term, findBy, setTrackList]);
+  }, [fetchTracks, term]);
+
+  if (!term || trackList.length === 0)
+    return (
+      <div className="mx-auto flex flex-col items-center gap-1 opacity-60">
+        <div className="w-36">
+          <EmptyResult />
+        </div>
+        <span className="font-bold">
+          {!term ? "You need to search something" : "There is no search result"}
+        </span>
+      </div>
+    );
+
+  return (
+    <div className="flex flex-col gap-1">
+      {trackList
+        ?.filter((track) => track.album)
+        .map((track) => (
+          <div
+            key={track.id + track.name}
+            className={cn(
+              "flex cursor-pointer items-center justify-between rounded-md  p-2",
+              trackSelected?.id == track.id
+                ? "bg-primary/30"
+                : "bg-default/20 hover:bg-default/50"
+            )}
+            onClick={() =>
+              handleTrackClick({
+                id: track.id,
+                image: track.album.images[2].url,
+                title: track.name,
+                titleLowercase: toLower(track.name),
+                authorId: track.artists[0].id,
+                author: track.artists[0].name,
+                url: track.href,
+                source: "spotify",
+              })
+            }
+          >
+            <User
+              name={track.name}
+              description={track.artists[0].name}
+              isLinked={false}
+              avatarProps={{ src: track.album.images[2].url }}
+              size="md"
+              radius="full"
+            />
+            <Icon
+              icon={`solar:${
+                trackSelected?.id == track.id
+                  ? "check-circle-linear"
+                  : "alt-arrow-right-linear"
+              }`}
+              className="text-lg"
+            />
+          </div>
+        ))}
+    </div>
+  );
+};
+
+const SearchYoutube = ({ term }: { term: string }) => {
+  const [trackList, setTrackList] = useAtom(tracklistAtom);
+  const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
+
+  const fetchTracks = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `https://youtube.googleapis.com/youtube/v3/search?part=snippet&q=${term}&type=video&videoCategoryId=10&videoEmbeddable=true&key=${process.env.NEXT_PUBLIC_YOUTUBE_API_KEY}`
+      );
+      const data = await response.json();
+      setTrackList((oldTrackList) => [...oldTrackList, ...data.items]);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [term, setTrackList]);
 
   const handleTrackClick = (track: TrackSelected) => {
     setTrackSelected(track);
@@ -308,69 +483,63 @@ const SearchSpotify = ({ term, findBy }: SearchSpotifyProps) => {
       fetchTracks().catch((err) => console.error(err));
     }
   }, [fetchTracks, term]);
+
+  if (!term || trackList.length === 0)
+    return (
+      <div className="mx-auto flex flex-col items-center gap-1 opacity-60">
+        <div className="w-36">
+          <EmptyResult />
+        </div>
+        <span className="font-bold">
+          {!term ? "You need to search something" : "There is no search result"}
+        </span>
+      </div>
+    );
+
   return (
     <div className="flex flex-col gap-1">
-      {trackList?.map((track) => (
-        <div
-          key={track.id}
-          className={cn(
-            "flex cursor-pointer items-center justify-between rounded-md  p-2",
-            trackSelected?.id == track.id
-              ? "bg-primary/30"
-              : "bg-default/20 hover:bg-default/50"
-          )}
-          onClick={() =>
-            handleTrackClick({
-              id: track.id,
-              image: track.album.images[2].url,
-              title: track.name,
-              titleLowercase: toLower(track.name),
-              authorId: track.artists[0].id,
-              author: track.artists[0].name,
-              url: track.href,
-              source: "spotify",
-            })
-          }
-        >
-          <User
-            name={track.name}
-            description={track.artists[0].name}
-            isLinked={false}
-            avatarProps={{ src: track.album.images[2].url }}
-            size="md"
-            radius="full"
-          />
-          <Icon
-            icon={`solar:${
-              trackSelected?.id == track.id
-                ? "check-circle-linear"
-                : "alt-arrow-right-linear"
-            }`}
-            className="text-lg"
-          />
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const SearchYoutube = ({ term, findBy }: { term: string; findBy: string }) => {
-  const [count, setCount] = useState<number>(0);
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setCount((prevCount) => prevCount + 1);
-    }, 1000); // Increment every 1000 milliseconds (1 second)
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []); // Empty dependency array ensures the effect runs once on component mount
-
-  return (
-    <div>
-      <h1>{term}</h1>
-      <h1>Counter: {count}</h1>
+      {trackList
+        ?.filter((track) => track.snippet)
+        .map((track, index) => (
+          <div
+            key={index}
+            className={cn(
+              "flex cursor-pointer items-center justify-between rounded-md  p-2",
+              trackSelected?.id == track.id.videoId
+                ? "bg-primary/30"
+                : "bg-default/20 hover:bg-default/50"
+            )}
+            onClick={() =>
+              handleTrackClick({
+                id: track.id.videoId,
+                image: track.snippet.thumbnails.default.url,
+                title: track.snippet.title,
+                titleLowercase: toLower(track.snippet.title),
+                authorId: track.snippet.channelId,
+                author: track.snippet.channelTitle,
+                url: `https://youtube.com/watch?v=${track.id.videoId}`,
+                source: "youtube",
+              })
+            }
+          >
+            <User
+              name={track.snippet.title}
+              description={track.snippet.channelTitle}
+              isLinked={false}
+              avatarProps={{ src: track.snippet.thumbnails.default.url }}
+              size="md"
+              radius="full"
+            />
+            <Icon
+              icon={`solar:${
+                trackSelected?.id == track.id.videoId
+                  ? "check-circle-linear"
+                  : "alt-arrow-right-linear"
+              }`}
+              className="text-lg"
+            />
+          </div>
+        ))}
     </div>
   );
 };

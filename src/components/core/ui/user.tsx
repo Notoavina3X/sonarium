@@ -25,13 +25,17 @@ function User({
   if (!isLinked) {
     return (
       <div className={userVariant.wrapper({ size })}>
-        <Avatar
-          {...avatarProps}
-          size={size}
-          radius={radius ?? size}
-          showFallback
-        />
-        <div className="flex h-full flex-col justify-center overflow-hidden">
+        {!name ? (
+          <Skeleton
+            className={userVariant.avatar({ radius: size })}
+            classNames={{
+              base: "bg-transparent dark:bg-transparent",
+            }}
+          />
+        ) : (
+          <Avatar {...avatarProps} size={size} radius={radius ?? size} />
+        )}
+        <div className="h flex h-full flex-col justify-center overflow-hidden">
           {!name ? (
             <Skeleton
               className={userVariant.name.skeleton({ size, radius: size })}
@@ -60,14 +64,16 @@ function User({
   }
   return (
     <div className={userVariant.wrapper({ size })}>
-      <Avatar
-        as={Link}
-        href={`/${username}`}
-        {...avatarProps}
-        size={size}
-        radius={size}
-        showFallback
-      />
+      {!name ? (
+        <Skeleton
+          className={userVariant.avatar({ radius: size })}
+          classNames={{
+            base: "bg-transparent dark:bg-transparent",
+          }}
+        />
+      ) : (
+        <Avatar {...avatarProps} size={size} radius={radius ?? size} />
+      )}
       <div className="flex h-full flex-col justify-center overflow-hidden">
         {!name ? (
           <Skeleton

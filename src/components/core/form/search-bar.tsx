@@ -4,11 +4,12 @@ import { useCallback, useState } from "react";
 import _ from "lodash";
 
 type SearchBarProps = {
+  placeholder?: string;
   handleSearch: (value: string) => void;
   onClear: () => void;
 };
 
-function SearchBar({ handleSearch, onClear }: SearchBarProps) {
+function SearchBar({ placeholder, handleSearch, onClear }: SearchBarProps) {
   const [query, setQuery] = useState<string>("");
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -24,7 +25,7 @@ function SearchBar({ handleSearch, onClear }: SearchBarProps) {
 
   return (
     <Input
-      placeholder="Search"
+      placeholder={placeholder ?? "Search"}
       isClearable
       startContent={
         <Icon icon="solar:minimalistic-magnifer-linear" className="text-xl" />

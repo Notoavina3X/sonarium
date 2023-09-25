@@ -3,7 +3,7 @@ import { CircularProgress, Image, Link } from "@nextui-org/react";
 import { useState, useEffect, createRef } from "react";
 import YouTube from "react-youtube";
 import CopyButton from "@/components/global/copy-button";
-import { type TrackSelected } from "@/atoms/track-selected-atom";
+import { type TrackSelected } from "@/store/track-selected-atom";
 
 function YoutubeEmbed({ track }: { track: TrackSelected }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -58,14 +58,13 @@ function YoutubeEmbed({ track }: { track: TrackSelected }) {
 
   return (
     <div className="relative grid h-20 w-full grid-cols-[64px_auto] gap-4 rounded-xl bg-red-600/20 p-2">
-      <Image
-        as={Link}
-        href={track?.url}
-        isExternal
-        src={track?.image}
-        alt={track?.title}
-        className="aspect-square w-[64px] cursor-pointer rounded-lg"
-      />
+      <Link href={track?.url} isExternal>
+        <Image
+          src={track?.image}
+          alt={track?.title}
+          className="aspect-square w-[64px] cursor-pointer rounded-lg"
+        />
+      </Link>
       <div className="grid grid-cols-[auto_64px]">
         <div className="flex h-full flex-col justify-end gap-1 overflow-hidden">
           <Link

@@ -1,20 +1,26 @@
-import { api } from "@/utils/api";
-import Navbar from "@/layouts/core/navbar";
-import Head from "next/head";
 import InfinitePostList from "@/components/core/ui/infinite-post-list";
+import Navbar from "@/layouts/core/navbar";
+import { api } from "@/utils/api";
+import { useSession } from "next-auth/react";
+import Head from "next/head";
+import React from "react";
 
-export default function Home() {
+function Bookmarks() {
+  const { data: sessionData } = useSession();
+
   return (
     <div className="min-h-screen grow">
       <Head>
-        <title>For you | Sonarium</title>
+        <title>Bookmarks | Sonarium</title>
       </Head>
       <Navbar>
-        <div>
-          <h1 className="text-xl font-bold">For you</h1>
-          <span className="text-xs italic text-foreground-500">
-            &quot;Know them better&quot;
-          </span>
+        <div className="flex flex-col gap-2">
+          <div>
+            <h1 className="text-xl font-bold">Bookmarks</h1>
+            <span className="text-xs text-foreground-500">
+              @{sessionData?.user.username}
+            </span>
+          </div>
         </div>
       </Navbar>
       <section className="flex flex-col gap-2">
@@ -26,7 +32,7 @@ export default function Home() {
 
 function Feed() {
   const posts = api.post.infiniteFeed.useInfiniteQuery(
-    {},
+    { onlyBookmarked: true },
     { getNextPageParam: (lastPage) => lastPage.nextCursor }
   );
 
@@ -40,3 +46,5 @@ function Feed() {
     />
   );
 }
+
+export default Bookmarks;

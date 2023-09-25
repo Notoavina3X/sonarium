@@ -1,4 +1,4 @@
-import Loader from "@/components/global/loader";
+import Loader from "@/components/global/Loader";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { useEffect, type ReactNode } from "react";

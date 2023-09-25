@@ -42,7 +42,7 @@ export default function Explore() {
 const Trends = () => {
   return (
     <Card className="bg-content2/50 px-2 shadow-none">
-      <CardHeader className="text-xl font-black">Trends for you</CardHeader>
+      <CardHeader className="text-xl font-black">Popular trends</CardHeader>
       <CardBody className="p-3">
         <ul className="flex flex-col gap-3 text-sm font-bold">
           <li>

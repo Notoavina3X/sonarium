@@ -19,24 +19,34 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { isModalOpenAtom, trackSelectedAtom } from "@/store";
+import { useAtom } from "jotai";
 
 const variants = {
   open: { minWidth: "300px" },
   close: { minWidth: "75px" },
 };
 
-function LeftSidebar({ handleOpenModal }: { handleOpenModal: () => void }) {
+function LeftSidebar() {
   const { data: sessionData } = useSession();
   const user = sessionData?.user;
   const router = useRouter();
   const [isExpand, setIsExpand] = useState<boolean>(true);
 
+  const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
+  const [isModalOpen, setIsModalOpen] = useAtom(isModalOpenAtom);
+
   const handleExpand = () => setIsExpand(!isExpand);
+
+  const handleNewPost = () => {
+    setTrackSelected(null);
+    setIsModalOpen(true);
+  };
 
   return (
     <motion.div
       className={cn(
-        "sticky top-2 flex h-[calc(100vh_-_16px)] flex-col justify-between rounded-2xl bg-content2/50 px-5 py-4",
+        "sticky top-2 hidden h-[calc(100vh_-_16px)] flex-col justify-between rounded-2xl bg-content2/50 px-5 py-4 lg:flex",
         !isExpand && "items-center"
       )}
       initial={{ minWidth: "300px" }}
@@ -146,7 +156,7 @@ function LeftSidebar({ handleOpenModal }: { handleOpenModal: () => void }) {
             size="lg"
             className="font-bold"
             isIconOnly={!isExpand}
-            onPress={() => void handleOpenModal()}
+            onPress={() => void handleNewPost()}
           >
             {isExpand ? (
               "New Post"

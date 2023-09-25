@@ -26,13 +26,19 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import ErrorPage from "next/error";
 import { type Key, useState } from "react";
-import { useAtom } from "jotai";
 import { useSession } from "next-auth/react";
+import InfinitePostList from "@/components/core/ui/infinite-post-list";
+import { Profile } from "@/types";
 
 const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   username,
 }) => {
   const { data: profile } = api.profile.getByUsername.useQuery({ username });
+
+  const posts = api.post.infiniteProfileFeed.useInfiniteQuery(
+    { userId: profile?.id ?? "stone310" },
+    { getNextPageParam: (lastPage) => lastPage.nextCursor }
+  );
 
   const router = useRouter();
 
@@ -72,27 +78,43 @@ const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
       </Navbar>
       <section className="flex w-full flex-col items-center gap-2">
         <ProfileInfo profile={profile} />
+        <ul className="w-full">
+          <InfinitePostList
+            posts={posts.data?.pages.flatMap((page) => page.posts)}
+            isError={posts.isError}
+            isLoading={posts.isLoading}
+            hasMore={posts.hasNextPage}
+            fetchNewPosts={posts.fetchNextPage}
+          />
+        </ul>
       </section>
     </div>
   );
 };
 
-type ProfileInfoProps = {
-  profile: {
-    name: string | null;
-    username: string | null;
-    image: string | null;
-    followersCount: number;
-    followsCount: number;
-    postsCount: number;
-    isFollowing: boolean;
-  };
-};
-
-function ProfileInfo({ profile }: ProfileInfoProps) {
+function ProfileInfo({ profile }: { profile: Profile }) {
   const [tabKey, setTabKey] = useState("followers");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { data: sessionData } = useSession();
+
+  const trpcUtils = api.useContext();
+  const toggleFollow = api.profile.toggleFollow.useMutation({
+    onSuccess: ({ addedFollow }) => {
+      trpcUtils.profile.getByUsername.setData(
+        { username: profile.username ?? "stone310" },
+        (oldData) => {
+          if (oldData == null) return;
+
+          const countModifier = addedFollow ? 1 : -1;
+          return {
+            ...oldData,
+            isFollowing: addedFollow,
+            followersCount: oldData.followersCount + countModifier,
+          };
+        }
+      );
+    },
+  });
 
   const handleShipClick = (key: string) => {
     onOpen();
@@ -128,7 +150,7 @@ function ProfileInfo({ profile }: ProfileInfoProps) {
               </NextUILink>
             </span>
             <span className="text-sm font-semibold">
-              0{" "}
+              {profile.followsCount}{" "}
               <NextUILink
                 onPress={() => void handleShipClick("following")}
                 className="cursor-pointer opacity-70"
@@ -139,12 +161,24 @@ function ProfileInfo({ profile }: ProfileInfoProps) {
               </NextUILink>
             </span>
           </div>
-          {profile.username != sessionData?.user.username && (
+          {profile.id != sessionData?.user.id && (
             <Button
               size="md"
               className="w-32 font-bold"
               variant="solid"
               color={profile.isFollowing ? "default" : "primary"}
+              onPress={() => toggleFollow.mutate({ userId: profile.id })}
+              isLoading={toggleFollow.isLoading}
+              startContent={
+                !profile.isFollowing && (
+                  <Icon icon="solar:user-plus-bold" className="text-xl" />
+                )
+              }
+              endContent={
+                profile.isFollowing && (
+                  <Icon icon="solar:check-read-linear" className="text-xl" />
+                )
+              }
             >
               {profile.isFollowing ? "Unfollow" : "Follow"}
             </Button>
@@ -237,23 +271,6 @@ export async function getStaticProps(
       username,
     },
   };
-}
-
-function Revealed() {
-  return (
-    <Tabs
-      aria-label="revealed"
-      variant="solid"
-      color="primary"
-      size="lg"
-      classNames={{ tabList: "bg-content2/50" }}
-      disabledKeys={["Replies", "Likes"]}
-    >
-      <Tab key="posts" title="Posts" className="font-semibold"></Tab>
-      <Tab key="Replies" title="Replies" className="font-bold"></Tab>
-      <Tab key="Likes" title="Likes" className="font-bold"></Tab>
-    </Tabs>
-  );
 }
 
 export default Profile;

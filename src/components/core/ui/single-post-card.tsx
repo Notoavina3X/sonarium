@@ -1,25 +1,22 @@
+import type { Post } from "@/types";
+import { api } from "@/utils/api";
+import { dateFormater } from "@/utils/methods";
+import { Icon } from "@iconify/react";
 import {
-  Button,
   Card,
-  CardBody,
-  CardFooter,
   CardHeader,
   Chip,
   Dropdown,
-  DropdownItem,
-  DropdownMenu,
   DropdownTrigger,
+  Button,
+  DropdownMenu,
+  DropdownItem,
+  CardBody,
+  CardFooter,
   Tooltip,
 } from "@nextui-org/react";
 import User from "./user";
-import { Icon } from "@iconify/react";
-import { useRouter } from "next/router";
-import { toast } from "sonner";
-import { useState } from "react";
-import { type Post } from "@/types";
-import { dateFormater } from "@/utils/methods";
 import EmbedPlayer from "./embed-player";
-import { api } from "@/utils/api";
 import {
   type TrackSelected,
   isModalOpenAtom,
@@ -27,25 +24,120 @@ import {
   trackSelectedAtom,
 } from "@/store";
 import { useAtom } from "jotai";
-import Link from "next/link";
+import { toast } from "sonner";
 import SentenceLinked from "./sentence-linked";
+import Link from "next/link";
 
-function PostCard({ post }: { post: Post }) {
+export default function SinglePostCard({ post }: { post: Post | undefined }) {
   const [sharingPost, setSharingPost] = useAtom(sharingPostAtom);
   const [isModalOpen, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
 
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const trpcUtils = api.useContext();
+  const toggleLike = api.post?.toggleLike.useMutation({
+    onSuccess: ({ addedLike }) => {
+      if (post?.id) {
+        trpcUtils.post.getById.setData({ id: post.id }, (oldData) => {
+          if (oldData == null) return;
 
-  const router = useRouter();
+          const countModifier = addedLike ? 1 : -1;
 
-  const handleCardClick = () => {
-    if (!isDropdownOpen) {
-      router.push(`/post/${post.id}`).catch((err) => {
-        console.log(err);
-        toast.error("Error while redirecting");
-      });
-    }
+          return {
+            ...oldData,
+            likeCount: oldData.likeCount + countModifier,
+            isLiked: addedLike,
+          };
+        });
+      }
+    },
+  });
+
+  const toggleBookmark = api.post.toggleBookmark.useMutation({
+    onSuccess: ({ addedBookmark }) => {
+      if (post?.id) {
+        trpcUtils.post.getById.setData({ id: post.id }, (oldData) => {
+          if (oldData == null) return;
+
+          const countModifier = addedBookmark ? 1 : -1;
+
+          return {
+            ...oldData,
+            bookmarkCount: oldData.bookmarkCount + countModifier,
+            isBookmarked: addedBookmark,
+          };
+        });
+        const updateData: Parameters<
+          typeof trpcUtils.post.infiniteFeed.setInfiniteData
+        >[1] = (oldData) => {
+          if (oldData == null) return;
+
+          const countModifier = addedBookmark ? 1 : -1;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => {
+              return {
+                ...page,
+                posts: page.posts.map((oldPost) => {
+                  if (oldPost.id === post.id) {
+                    return {
+                      ...oldPost,
+                      bookmarkCount: oldPost.bookmarkCount + countModifier,
+                      isBookmarked: addedBookmark,
+                    };
+                  }
+
+                  return oldPost;
+                }),
+              };
+            }),
+          };
+        };
+
+        const updateDataBookmarked: Parameters<
+          typeof trpcUtils.post.infiniteFeed.setInfiniteData
+        >[1] = (oldData) => {
+          if (oldData == null) return;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => {
+              return {
+                ...page,
+                posts: page.posts.filter((oldPost) => oldPost.id !== post.id),
+              };
+            }),
+          };
+        };
+
+        trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData);
+        trpcUtils.post.infiniteFeed.setInfiniteData(
+          { onlyFollowing: true },
+          updateData
+        );
+        trpcUtils.post.infiniteFeed.setInfiniteData(
+          { onlyBookmarked: true },
+          updateDataBookmarked
+        );
+        trpcUtils.post.infiniteProfileFeed.setInfiniteData(
+          { userId: post.user.id },
+          updateData
+        );
+
+        const message = addedBookmark
+          ? "Added to bookmarks"
+          : "Removed from bookmarks";
+        toast.success(message);
+      }
+    },
+  });
+
+  const handleToggleLike = () => {
+    if (post?.id) toggleLike.mutate({ id: post.id });
+  };
+
+  const handleToggleBookmark = () => {
+    if (post?.id) toggleBookmark.mutate({ id: post.id });
   };
 
   const handleUseTrack = (track: TrackSelected) => {
@@ -53,136 +145,18 @@ function PostCard({ post }: { post: Post }) {
     setIsModalOpen(true);
   };
 
-  const trpcUtils = api.useContext();
-  const toggleLike = api.post.toggleLike.useMutation({
-    onSuccess: ({ addedLike }) => {
-      const updateData: Parameters<
-        typeof trpcUtils.post.infiniteFeed.setInfiniteData
-      >[1] = (oldData) => {
-        if (oldData == null) return;
-
-        const countModifier = addedLike ? 1 : -1;
-
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => {
-            return {
-              ...page,
-              posts: page.posts.map((oldPost) => {
-                if (oldPost.id === post.id) {
-                  return {
-                    ...oldPost,
-                    likeCount: oldPost.likeCount + countModifier,
-                    isLiked: addedLike,
-                  };
-                }
-
-                return oldPost;
-              }),
-            };
-          }),
-        };
-      };
-
-      trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData);
-      trpcUtils.post.infiniteFeed.setInfiniteData(
-        { onlyFollowing: true },
-        updateData
-      );
-      trpcUtils.post.infiniteProfileFeed.setInfiniteData(
-        { userId: post.user.id },
-        updateData
-      );
-    },
-  });
-
-  const toggleBookmark = api.post.toggleBookmark.useMutation({
-    onSuccess: ({ addedBookmark }) => {
-      const updateData: Parameters<
-        typeof trpcUtils.post.infiniteFeed.setInfiniteData
-      >[1] = (oldData) => {
-        if (oldData == null) return;
-
-        const countModifier = addedBookmark ? 1 : -1;
-
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => {
-            return {
-              ...page,
-              posts: page.posts.map((oldPost) => {
-                if (oldPost.id === post.id) {
-                  return {
-                    ...oldPost,
-                    bookmarkCount: oldPost.bookmarkCount + countModifier,
-                    isBookmarked: addedBookmark,
-                  };
-                }
-
-                return oldPost;
-              }),
-            };
-          }),
-        };
-      };
-
-      const updateDataBookmarked: Parameters<
-        typeof trpcUtils.post.infiniteFeed.setInfiniteData
-      >[1] = (oldData) => {
-        if (oldData == null) return;
-
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page) => {
-            return {
-              ...page,
-              posts: page.posts.filter((oldPost) => oldPost.id !== post.id),
-            };
-          }),
-        };
-      };
-
-      trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData);
-      trpcUtils.post.infiniteFeed.setInfiniteData(
-        { onlyFollowing: true },
-        updateData
-      );
-      trpcUtils.post.infiniteFeed.setInfiniteData(
-        { onlyBookmarked: true },
-        updateDataBookmarked
-      );
-      trpcUtils.post.infiniteProfileFeed.setInfiniteData(
-        { userId: post.user.id },
-        updateData
-      );
-
-      const message = addedBookmark
-        ? "Added to bookmarks"
-        : "Removed from bookmarks";
-      toast.success(message);
-    },
-  });
-
-  const handleToggleLike = () => {
-    toggleLike.mutate({ id: post.id });
-  };
-
-  const handleToggleBookmark = () => {
-    toggleBookmark.mutate({ id: post.id });
-  };
-
   return (
-    <div onClick={handleCardClick} className="my-2">
-      <Card className="cursor-pointer bg-content1/25 p-2 shadow-none hover:bg-content1/40">
+    <div className="my-2 w-full">
+      <Card className="bg-content1/25 p-2 shadow-none">
         <CardHeader className="flex items-start justify-between gap-2">
           <div className="flex flex-nowrap items-start justify-start gap-1">
             <User
-              id={post.user.id}
-              name={post.user.name}
-              username={post.user.username}
+              id={post?.user.id}
+              name={post?.user.name}
+              username={post?.user.username}
               avatarProps={{
-                name: post.user.name ?? undefined,
-                src: post.user.image ?? undefined,
+                name: post?.user.name ?? undefined,
+                src: post?.user.image ?? undefined,
               }}
             />
             <span className="ml-1 text-foreground-500">∙</span>
@@ -190,13 +164,12 @@ function PostCard({ post }: { post: Post }) {
               className="bg-transparent px-0 text-xs text-foreground-500"
               size="sm"
             >
-              {dateFormater.format(post.createdAt)}
+              {dateFormater.format(post?.createdAt)}
             </Chip>
           </div>
           <Dropdown
             placement="bottom-end"
             backdrop="opaque"
-            onOpenChange={(isOpen) => setIsDropdownOpen(isOpen)}
             classNames={{ base: "bg-content3 dark:bg-content1" }}
           >
             <DropdownTrigger>
@@ -230,7 +203,7 @@ function PostCard({ post }: { post: Post }) {
                 }
               >
                 <span className="font-semibold">
-                  Unfollow @{post.user.username}
+                  Unfollow @{post?.user.username}
                 </span>
               </DropdownItem>
               <DropdownItem
@@ -240,7 +213,7 @@ function PostCard({ post }: { post: Post }) {
                 }
               >
                 <span className="font-semibold">
-                  Block @{post.user.username}
+                  Block @{post?.user.username}
                 </span>
               </DropdownItem>
               <DropdownItem
@@ -256,11 +229,11 @@ function PostCard({ post }: { post: Post }) {
         </CardHeader>
         <CardBody className="flex flex-col gap-4 px-3 py-2">
           <p className="text-sm text-foreground-600">
-            <SentenceLinked sentence={post.description} toLink={post.tags} />
+            <SentenceLinked sentence={post?.description} toLink={post?.tags} />
           </p>
-          {post.track && (
+          {post?.track && (
             <div className="group relative w-full">
-              <EmbedPlayer track={post.track} />
+              <EmbedPlayer track={post?.track} />
               <div className="absolute -right-3 -top-3 hidden group-hover:flex">
                 <Tooltip content="Use this track">
                   <Button
@@ -280,7 +253,7 @@ function PostCard({ post }: { post: Post }) {
               </div>
             </div>
           )}
-          {post.sharedPost?.user && (
+          {post?.sharedPost?.user && (
             <Card className="bg-white/20 p-2 shadow-none dark:bg-black/20">
               <CardHeader
                 className="flex items-start justify-between gap-2"
@@ -347,20 +320,25 @@ function PostCard({ post }: { post: Post }) {
           <div className="hidden w-full justify-between md:flex">
             <Button
               size="sm"
-              variant={post.isLiked ? "flat" : "light"}
+              variant={post?.isLiked ? "flat" : "light"}
               radius="md"
-              color={post.isLiked ? "primary" : "default"}
+              color={post?.isLiked ? "primary" : "default"}
               onPress={handleToggleLike}
               isLoading={toggleLike.isLoading}
-              className={`${!post.isLiked && "text-foreground-500"}`}
+              className={`${!post?.isLiked && "text-foreground-500"}`}
             >
               <Icon
-                icon={`solar:heart-angle-${post.isLiked ? "bold" : "linear"}`}
+                icon={`solar:heart-angle-${post?.isLiked ? "bold" : "linear"}`}
                 className="text-lg"
               />
-              <span>{post.likeCount}</span>
+              <span
+                className="cursor-pointer hover:underline"
+                onClick={() => void alert(post?.likeCount)}
+              >
+                {post?.likeCount}
+              </span>
             </Button>
-            <div className="flex justify-between gap-3">
+            <div className="flex gap-3">
               <Button
                 size="sm"
                 variant="light"
@@ -368,7 +346,7 @@ function PostCard({ post }: { post: Post }) {
                 className="text-foreground-500"
               >
                 <Icon icon="solar:chat-dots-linear" className="text-lg" />
-                <span>{post.commentCount}</span>
+                <span>{post?.commentCount}</span>
               </Button>
               <Button
                 size="sm"
@@ -376,7 +354,7 @@ function PostCard({ post }: { post: Post }) {
                 radius="md"
                 onPress={() =>
                   setSharingPost({
-                    postSelected: post.sharedPost ?? post,
+                    postSelected: post?.sharedPost ?? post,
                     isSharing: true,
                   })
                 }
@@ -386,42 +364,47 @@ function PostCard({ post }: { post: Post }) {
                   icon="solar:square-share-line-linear"
                   className="text-lg"
                 />
-                <span>{post.sharedCount}</span>
+                <span>{post?.sharedCount}</span>
               </Button>
               <Button
                 size="sm"
-                variant={post.isBookmarked ? "flat" : "light"}
+                variant={post?.isBookmarked ? "flat" : "light"}
                 radius="md"
-                color={post.isBookmarked ? "warning" : "default"}
+                color={post?.isBookmarked ? "warning" : "default"}
                 onPress={handleToggleBookmark}
                 isLoading={toggleBookmark.isLoading}
-                className={`${!post.isBookmarked && "text-foreground-500"}`}
+                className={`${!post?.isBookmarked && "text-foreground-500"}`}
               >
                 <Icon
                   icon={`solar:bookmark-${
-                    post.isBookmarked ? "bold" : "linear"
+                    post?.isBookmarked ? "bold" : "linear"
                   }`}
                   className="text-lg"
                 />
-                <span>{post.bookmarkCount}</span>
+                <span>{post?.bookmarkCount}</span>
               </Button>
             </div>
           </div>
           <div className="flex w-full justify-between md:hidden">
             <Button
               size="sm"
-              variant={post.isLiked ? "flat" : "light"}
+              variant={post?.isLiked ? "flat" : "light"}
               radius="md"
-              color={post.isLiked ? "primary" : "default"}
+              color={post?.isLiked ? "primary" : "default"}
               onPress={handleToggleLike}
               isLoading={toggleLike.isLoading}
-              className={`${!post.isLiked && "text-foreground-500"}`}
+              className={`${!post?.isLiked && "text-foreground-500"}`}
             >
               <Icon
-                icon={`solar:heart-angle-${post.isLiked ? "bold" : "linear"}`}
+                icon={`solar:heart-angle-${post?.isLiked ? "bold" : "linear"}`}
                 className="text-lg"
               />
-              <span>{post.likeCount}</span>
+              <span
+                className="cursor-pointer hover:underline"
+                onClick={() => void alert(post?.likeCount)}
+              >
+                {post?.likeCount}
+              </span>
             </Button>
             <Button
               size="sm"
@@ -430,7 +413,7 @@ function PostCard({ post }: { post: Post }) {
               className="text-foreground-500"
             >
               <Icon icon="solar:chat-dots-linear" className="text-lg" />
-              <span>{post.commentCount}</span>
+              <span>{post?.commentCount}</span>
             </Button>
             <Button
               size="sm"
@@ -442,22 +425,24 @@ function PostCard({ post }: { post: Post }) {
               className="text-foreground-500"
             >
               <Icon icon="solar:square-share-line-linear" className="text-lg" />
-              <span>{post.sharedCount}</span>
+              <span>{post?.sharedCount}</span>
             </Button>
             <Button
               size="sm"
-              variant={post.isBookmarked ? "flat" : "light"}
+              variant={post?.isBookmarked ? "flat" : "light"}
               radius="md"
-              color={post.isBookmarked ? "warning" : "default"}
+              color={post?.isBookmarked ? "warning" : "default"}
               onPress={handleToggleBookmark}
               isLoading={toggleBookmark.isLoading}
-              className={`${!post.isBookmarked && "text-foreground-500"}`}
+              className={`${!post?.isBookmarked && "text-foreground-500"}`}
             >
               <Icon
-                icon={`solar:bookmark-${post.isBookmarked ? "bold" : "linear"}`}
+                icon={`solar:bookmark-${
+                  post?.isBookmarked ? "bold" : "linear"
+                }`}
                 className="text-lg"
               />
-              <span>{post.bookmarkCount}</span>
+              <span>{post?.bookmarkCount}</span>
             </Button>
           </div>
         </CardFooter>
@@ -465,5 +450,3 @@ function PostCard({ post }: { post: Post }) {
     </div>
   );
 }
-
-export default PostCard;

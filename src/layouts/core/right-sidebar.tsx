@@ -1,5 +1,6 @@
 import SearchBar from "@/components/core/form/search-bar";
 import User from "@/components/core/ui/user";
+import { api } from "@/utils/api";
 import {
   Button,
   Card,
@@ -14,7 +15,7 @@ import { useRouter } from "next/router";
 function RightSidebar() {
   const router = useRouter();
   return (
-    <div className="sticky top-2 flex min-w-[350px] flex-col gap-2">
+    <div className="sticky top-2 hidden min-w-[350px] flex-col gap-2 lg:flex">
       {!router.pathname.startsWith("/explore") && (
         <>
           <SearchBar />
@@ -27,20 +28,18 @@ function RightSidebar() {
 }
 
 const Trends = () => {
+  const { data } = api.tag.getTop.useQuery({ limit: 3 });
+
   return (
     <Card className="bg-content2/50 px-2 shadow-none">
-      <CardHeader className="text-xl font-black">Trends for you</CardHeader>
+      <CardHeader className="text-xl font-black">Popular trends</CardHeader>
       <CardBody className="p-3">
         <ul className="flex flex-col gap-3 text-sm font-bold">
-          <li>
-            <Link href={"/explore?q=test"}>#Feel_bad</Link>
-          </li>
-          <li>
-            <Link href={"/explore?q=test"}>#sad</Link>
-          </li>
-          <li>
-            <Link href={"/explore?q=test"}>#lonely</Link>
-          </li>
+          {data?.tags.map((tag) => (
+            <li key={tag.id}>
+              <Link href={`/explore/tag/${tag.name}`}>{tag.name}</Link>
+            </li>
+          ))}
         </ul>
       </CardBody>
       <CardFooter>
