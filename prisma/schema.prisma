@@ -57,7 +57,8 @@ model User {
     posts         Post[]
     likes         Like[]
     comments      Comment[]
-    notifications Notification[]
+    notifications Notification[] @relation(name: "Owner")
+    notified      Notification[] @relation(name: "Author")
     commentLikes  CommentLike[]
     bookmarks     Bookmark[]
 }
@@ -141,13 +142,16 @@ model Bookmark {
 
 model Notification {
     id        String   @id @default(cuid())
+    authorId  String?
     userId    String
     message   String
+    content   Json
     isRead    Boolean  @default(false)
     createdAt DateTime @default(now())
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user      User     @relation(name: "Owner", fields: [userId], references: [id], onDelete: Cascade)
+    author    User?    @relation(name: "Author", fields: [authorId], references: [id], onDelete: Cascade)
 
-    @@unique([createdAt, userId])
+    @@unique([createdAt, id])
     @@index([userId])
 }
 

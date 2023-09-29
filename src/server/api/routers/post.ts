@@ -43,6 +43,10 @@ export const postRouter = createTRPCRouter({
                   name: true,
                   username: true,
                   image: true,
+                  followers:
+                    currentUserId == null
+                      ? false
+                      : { where: { id: currentUserId } },
                 },
               },
             },
@@ -69,6 +73,10 @@ export const postRouter = createTRPCRouter({
               name: true,
               username: true,
               image: true,
+              followers:
+                currentUserId == null
+                  ? false
+                  : { where: { id: currentUserId } },
             },
           },
         },
@@ -81,14 +89,27 @@ export const postRouter = createTRPCRouter({
         sharedPost: post.sharedPost
           ? {
               ...post.sharedPost,
-              tags: post.sharedPost?.tags.map((tag) => tag.name),
+              tags: post.sharedPost.tags.map((tag) => tag.name),
+              user: {
+                id: post.sharedPost.user.id,
+                name: post.sharedPost.user.name,
+                username: post.sharedPost.user.username,
+                image: post.sharedPost.user.image,
+                isFollowing: post.sharedPost?.user.followers.length > 0,
+              },
             }
           : undefined,
         description: post.description,
         tags: post.tags.map((tag) => tag.name),
         track: post.track,
         createdAt: post.createdAt,
-        user: post.user,
+        user: {
+          id: post.user.id,
+          name: post.user.name,
+          username: post.user.username,
+          image: post.user.image,
+          isFollowing: post.user.followers.length > 0,
+        },
         isLiked: post.likes.length > 0,
         isBookmarked: post.bookmarks.length > 0,
         likeCount: post._count.likes,
@@ -292,6 +313,27 @@ export const postRouter = createTRPCRouter({
         return { addedBookmark: false };
       }
     }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input: { id }, ctx }) => {
+      const deletedPost = await ctx.prisma.post.delete({ where: { id } });
+
+      await ctx.prisma.notification.updateMany({
+        where: { content: { equals: id, path: "postId" } },
+        data: {
+          content: {
+            id: "",
+            type: "post",
+            postId: "",
+          },
+          isRead: true,
+        },
+      });
+
+      return {
+        isDeleted: !!deletedPost,
+      };
+    }),
 });
 
 async function getInfinitePosts({
@@ -339,6 +381,12 @@ async function getInfinitePosts({
               name: true,
               username: true,
               image: true,
+              followers:
+                currentUserId == null
+                  ? undefined
+                  : {
+                      where: { id: currentUserId },
+                    },
             },
           },
         },
@@ -361,6 +409,12 @@ async function getInfinitePosts({
           name: true,
           username: true,
           image: true,
+          followers:
+            currentUserId == null
+              ? undefined
+              : {
+                  where: { id: currentUserId },
+                },
         },
       },
     },
@@ -382,13 +436,26 @@ async function getInfinitePosts({
         ? {
             ...item.sharedPost,
             tags: item.sharedPost?.tags.map((tag) => tag.name),
+            user: {
+              id: item.sharedPost?.user.id,
+              name: item.sharedPost?.user.name,
+              username: item.sharedPost?.user.username,
+              image: item.sharedPost?.user.image,
+              isFollowing: item.sharedPost?.user.followers.length > 0,
+            },
           }
         : undefined,
       description: item.description,
       tags: item.tags.map((tag) => tag.name),
       track: item.track,
       createdAt: item.createdAt,
-      user: item.user,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        username: item.user.username,
+        image: item.user.image,
+        isFollowing: item.user.followers.length > 0,
+      },
       isLiked: item.likes.length > 0,
       isBookmarked: item.bookmarks.length > 0,
       likeCount: item._count.likes,

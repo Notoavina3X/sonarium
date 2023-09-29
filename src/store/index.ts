@@ -1,4 +1,4 @@
-import type { SharedPost } from "@/types";
+import type { Comment, Post, SharedPost } from "@/types";
 import { atom } from "jotai";
 
 export const isModalOpenAtom = atom<boolean>(false);
@@ -23,7 +23,32 @@ export type sharingPost = {
   postSelected: SharedPost | undefined;
   isSharing: boolean;
 };
+
 export const sharingPostAtom = atom<sharingPost>({
   postSelected: undefined,
   isSharing: false,
+});
+
+export type CommentPost = {
+  postSelected: SharedPost | undefined;
+  isCommenting: boolean;
+};
+
+export const commentAtom = atom<CommentPost>({
+  postSelected: undefined,
+  isCommenting: false,
+});
+
+export const unreadAtom = atom<number>(0);
+
+export type DeleteAtom = {
+  type: "post" | "comment" | undefined;
+  instance: Post | Comment | undefined;
+  isDeleting: boolean;
+};
+
+export const deleteAtom = atom<DeleteAtom>({
+  type: undefined,
+  instance: undefined,
+  isDeleting: false,
 });

@@ -9,15 +9,9 @@ export const siteConfig: SiteConfig = {
   },
   mainNav: [
     {
-      title: "For you",
+      title: "Home",
       href: "/",
-      icon: "feed",
-      isActive: false,
-    },
-    {
-      title: "Following",
-      href: "/following",
-      icon: "users-group-rounded",
+      icon: "home-smile",
       isActive: false,
     },
     {

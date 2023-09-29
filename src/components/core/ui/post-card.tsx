@@ -25,15 +25,22 @@ import {
   isModalOpenAtom,
   sharingPostAtom,
   trackSelectedAtom,
+  commentAtom,
+  deleteAtom,
 } from "@/store";
 import { useAtom } from "jotai";
 import Link from "next/link";
 import SentenceLinked from "./sentence-linked";
+import { useSession } from "next-auth/react";
 
 function PostCard({ post }: { post: Post }) {
+  const { data: sessionData } = useSession();
+
   const [sharingPost, setSharingPost] = useAtom(sharingPostAtom);
   const [isModalOpen, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
+  const [comment, setComment] = useAtom(commentAtom);
+  const [deleting, setDeleting] = useAtom(deleteAtom);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
@@ -48,14 +55,36 @@ function PostCard({ post }: { post: Post }) {
     }
   };
 
+  const handleUserClick = () => {
+    if (!isDropdownOpen) {
+      router.push(`/${post.user.id}`).catch((err) => {
+        console.log(err);
+        toast.error("Error while redirecting");
+      });
+    }
+  };
+
   const handleUseTrack = (track: TrackSelected) => {
     setTrackSelected(track);
     setIsModalOpen(true);
   };
 
   const trpcUtils = api.useContext();
+  const notify = api.notification.create.useMutation({
+    onSuccess: async ({ notifications }) => {
+      await trpcUtils.notification.getCount.refetch();
+    },
+  });
   const toggleLike = api.post.toggleLike.useMutation({
-    onSuccess: ({ addedLike }) => {
+    onSuccess: async ({ addedLike }) => {
+      if (addedLike && post.user.id != sessionData?.user.id) {
+        await notify.mutateAsync({
+          userId: post.user.id,
+          text: post.description,
+          content: { id: post.id, type: "like", postId: post.id },
+        });
+      }
+
       const updateData: Parameters<
         typeof trpcUtils.post.infiniteFeed.setInfiniteData
       >[1] = (oldData) => {
@@ -97,7 +126,15 @@ function PostCard({ post }: { post: Post }) {
   });
 
   const toggleBookmark = api.post.toggleBookmark.useMutation({
-    onSuccess: ({ addedBookmark }) => {
+    onSuccess: async ({ addedBookmark }) => {
+      if (addedBookmark && post.user.id != sessionData?.user.id) {
+        await notify.mutateAsync({
+          userId: post.user.id,
+          text: post.description,
+          content: { id: post.id, type: "bookmark", postId: post.id },
+        });
+      }
+
       const updateData: Parameters<
         typeof trpcUtils.post.infiniteFeed.setInfiniteData
       >[1] = (oldData) => {
@@ -163,6 +200,106 @@ function PostCard({ post }: { post: Post }) {
     },
   });
 
+  const toggleFollow = api.profile.toggleFollow.useMutation({
+    onSuccess: async ({ addedFollow }) => {
+      trpcUtils.profile.getByUsername.setData(
+        { username: post.user.username ?? "stone310" },
+        (oldData) => {
+          if (oldData == null) return;
+
+          const countModifier = addedFollow ? 1 : -1;
+          return {
+            ...oldData,
+            isFollowing: addedFollow,
+            followersCount: oldData.followersCount + countModifier,
+          };
+        }
+      );
+
+      if (sessionData?.user.username) {
+        trpcUtils.profile.getByUsername.setData(
+          { username: sessionData.user.username },
+          (oldData) => {
+            if (oldData == null) return;
+
+            const countModifier = addedFollow ? 1 : -1;
+
+            return {
+              ...oldData,
+              followsCount: oldData.followsCount + countModifier,
+            };
+          }
+        );
+      }
+
+      if (addedFollow) {
+        notify.mutate({
+          userId: post.user.id,
+          text: "",
+          content: { id: "", type: "follow", postId: "" },
+        });
+      } else {
+        trpcUtils.post.infiniteFeed.setInfiniteData(
+          { onlyFollowing: true },
+          (oldData) => {
+            if (oldData == null) return;
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => {
+                return {
+                  ...page,
+                  posts: page.posts.filter(
+                    (oldPost) => oldPost.user.id !== post.user.id
+                  ),
+                };
+              }),
+            };
+          }
+        );
+      }
+
+      const updateData: Parameters<
+        typeof trpcUtils.post.infiniteFeed.setInfiniteData
+      >[1] = (oldData) => {
+        if (oldData == null) return;
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => {
+            return {
+              ...page,
+              posts: page.posts.map((oldPost) => {
+                if (oldPost.user.id === post.user.id) {
+                  return {
+                    ...oldPost,
+                    user: {
+                      ...oldPost.user,
+                      isFollowing: addedFollow,
+                    },
+                  };
+                }
+
+                return oldPost;
+              }),
+            };
+          }),
+        };
+      };
+
+      trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData);
+      trpcUtils.post.infiniteFeed.setInfiniteData(
+        { onlyBookmarked: true },
+        updateData
+      );
+      trpcUtils.post.infiniteProfileFeed.setInfiniteData(
+        { userId: post.user.id },
+        updateData
+      );
+      await trpcUtils.profile.getSuggestions.reset();
+    },
+  });
+
   const handleToggleLike = () => {
     toggleLike.mutate({ id: post.id });
   };
@@ -171,10 +308,19 @@ function PostCard({ post }: { post: Post }) {
     toggleBookmark.mutate({ id: post.id });
   };
 
+  const handleToggleFollow = () => {
+    toggleFollow.mutate({
+      userId: post.user.id,
+    });
+  };
+
   return (
-    <div onClick={handleCardClick} className="my-2">
+    <div className="my-2">
       <Card className="cursor-pointer bg-content1/25 p-2 shadow-none hover:bg-content1/40">
-        <CardHeader className="flex items-start justify-between gap-2">
+        <CardHeader
+          className="flex items-start justify-between gap-2"
+          onClick={handleUserClick}
+        >
           <div className="flex flex-nowrap items-start justify-start gap-1">
             <User
               id={post.user.id}
@@ -190,7 +336,7 @@ function PostCard({ post }: { post: Post }) {
               className="bg-transparent px-0 text-xs text-foreground-500"
               size="sm"
             >
-              {dateFormater.format(post.createdAt)}
+              {dateFormater(post.createdAt)}
             </Chip>
           </div>
           <Dropdown
@@ -210,51 +356,96 @@ function PostCard({ post }: { post: Post }) {
                 <Icon icon="solar:menu-dots-bold" />
               </Button>
             </DropdownTrigger>
-            <DropdownMenu
-              variant="flat"
-              aria-label="More options"
-              className="bg-content3 dark:bg-content1"
-            >
-              <DropdownItem
-                key="not_interested"
-                startContent={
-                  <Icon icon="solar:sad-circle-linear" className="text-lg" />
-                }
+            {post.user.id != sessionData?.user.id ? (
+              <DropdownMenu
+                variant="flat"
+                aria-label="More options"
+                className="bg-content3 dark:bg-content1"
               >
-                <span className="font-bold">Not interested</span>
-              </DropdownItem>
-              <DropdownItem
-                key="unfollow"
-                startContent={
-                  <Icon icon="solar:user-cross-linear" className="text-lg" />
-                }
+                <DropdownItem
+                  key="not_interested"
+                  startContent={
+                    <Icon icon="solar:sad-circle-linear" className="text-lg" />
+                  }
+                >
+                  <span className="font-bold">Not interested</span>
+                </DropdownItem>
+                {post.user.isFollowing ? (
+                  <DropdownItem
+                    key="unfollow"
+                    startContent={
+                      <Icon
+                        icon="solar:user-cross-linear"
+                        className="text-lg"
+                      />
+                    }
+                    onPress={handleToggleFollow}
+                  >
+                    <span className="font-semibold">
+                      Unfollow @{post.user.username}
+                    </span>
+                  </DropdownItem>
+                ) : (
+                  <DropdownItem
+                    key="follow"
+                    startContent={
+                      <Icon icon="solar:user-plus-linear" className="text-lg" />
+                    }
+                    onPress={handleToggleFollow}
+                  >
+                    <span className="font-semibold">
+                      Follow @{post.user.username}
+                    </span>
+                  </DropdownItem>
+                )}
+                <DropdownItem
+                  key="block"
+                  startContent={
+                    <Icon icon="solar:user-block-linear" className="text-lg" />
+                  }
+                >
+                  <span className="font-semibold">
+                    Block @{post.user.username}
+                  </span>
+                </DropdownItem>
+                <DropdownItem
+                  key="report"
+                  startContent={
+                    <Icon icon="solar:flag-linear" className="text-lg" />
+                  }
+                >
+                  <span className="font-semibold">Report post</span>
+                </DropdownItem>
+              </DropdownMenu>
+            ) : (
+              <DropdownMenu
+                variant="flat"
+                aria-label="More options"
+                className="bg-content3 dark:bg-content1"
               >
-                <span className="font-semibold">
-                  Unfollow @{post.user.username}
-                </span>
-              </DropdownItem>
-              <DropdownItem
-                key="block"
-                startContent={
-                  <Icon icon="solar:user-block-linear" className="text-lg" />
-                }
-              >
-                <span className="font-semibold">
-                  Block @{post.user.username}
-                </span>
-              </DropdownItem>
-              <DropdownItem
-                key="report"
-                startContent={
-                  <Icon icon="solar:flag-linear" className="text-lg" />
-                }
-              >
-                <span className="font-semibold">Report post</span>
-              </DropdownItem>
-            </DropdownMenu>
+                <DropdownItem
+                  key="delete"
+                  startContent={
+                    <Icon icon="solar:trash-bin-2-linear" className="text-lg" />
+                  }
+                  onPress={() =>
+                    void setDeleting({
+                      type: "post",
+                      instance: post,
+                      isDeleting: true,
+                    })
+                  }
+                >
+                  <span className="font-semibold">Delete this post</span>
+                </DropdownItem>
+              </DropdownMenu>
+            )}
           </Dropdown>
         </CardHeader>
-        <CardBody className="flex flex-col gap-4 px-3 py-2">
+        <CardBody
+          className="flex flex-col gap-4 px-3 py-2"
+          onClick={handleCardClick}
+        >
           <p className="text-sm text-foreground-600">
             <SentenceLinked sentence={post.description} toLink={post.tags} />
           </p>
@@ -302,7 +493,7 @@ function PostCard({ post }: { post: Post }) {
                     className="bg-transparent px-0 text-xs text-foreground-500"
                     size="sm"
                   >
-                    {dateFormater.format(post.sharedPost.createdAt)}
+                    {dateFormater(post.sharedPost.createdAt)}
                   </Chip>
                 </div>
               </CardHeader>
@@ -343,7 +534,7 @@ function PostCard({ post }: { post: Post }) {
             </Card>
           )}
         </CardBody>
-        <CardFooter>
+        <CardFooter onClick={handleCardClick}>
           <div className="hidden w-full justify-between md:flex">
             <Button
               size="sm"
@@ -366,6 +557,12 @@ function PostCard({ post }: { post: Post }) {
                 variant="light"
                 radius="md"
                 className="text-foreground-500"
+                onPress={() =>
+                  setComment({
+                    postSelected: post,
+                    isCommenting: true,
+                  })
+                }
               >
                 <Icon icon="solar:chat-dots-linear" className="text-lg" />
                 <span>{post.commentCount}</span>
@@ -428,6 +625,12 @@ function PostCard({ post }: { post: Post }) {
               variant="light"
               radius="md"
               className="text-foreground-500"
+              onPress={() =>
+                setComment({
+                  postSelected: post,
+                  isCommenting: true,
+                })
+              }
             >
               <Icon icon="solar:chat-dots-linear" className="text-lg" />
               <span>{post.commentCount}</span>
@@ -437,7 +640,10 @@ function PostCard({ post }: { post: Post }) {
               variant="light"
               radius="md"
               onPress={() =>
-                setSharingPost({ postSelected: post, isSharing: true })
+                setSharingPost({
+                  postSelected: post.sharedPost ?? post,
+                  isSharing: true,
+                })
               }
               className="text-foreground-500"
             >

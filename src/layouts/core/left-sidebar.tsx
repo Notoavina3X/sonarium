@@ -17,10 +17,11 @@ import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { isModalOpenAtom, trackSelectedAtom } from "@/store";
+import { isModalOpenAtom, trackSelectedAtom, unreadAtom } from "@/store";
 import { useAtom } from "jotai";
+import { api } from "@/utils/api";
 
 const variants = {
   open: { minWidth: "300px" },
@@ -33,8 +34,11 @@ function LeftSidebar() {
   const router = useRouter();
   const [isExpand, setIsExpand] = useState<boolean>(true);
 
+  const [unread, setUnread] = useAtom(unreadAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
   const [isModalOpen, setIsModalOpen] = useAtom(isModalOpenAtom);
+
+  const { data: count } = api.notification.getCount.useQuery();
 
   const handleExpand = () => setIsExpand(!isExpand);
 
@@ -42,6 +46,10 @@ function LeftSidebar() {
     setTrackSelected(null);
     setIsModalOpen(true);
   };
+
+  useEffect(() => {
+    setUnread(count ?? 0);
+  }, [setUnread, count]);
 
   return (
     <motion.div
@@ -124,10 +132,11 @@ function LeftSidebar() {
                         />
                       ) : (
                         <Badge
-                          content=""
                           shape="circle"
                           color="primary"
                           size="sm"
+                          content={unread > 99 ? "99+" : unread}
+                          isInvisible={unread == 0}
                         >
                           <Icon
                             icon={`solar:${icon}-${

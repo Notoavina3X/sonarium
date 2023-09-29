@@ -64,4 +64,129 @@ export const profileRouter = createTRPCRouter({
 
       return { addedFollow };
     }),
+  infiniteFollowing: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        limit: z.number().optional(),
+        cursor: z.object({ id: z.string() }).optional(),
+      })
+    )
+    .query(async ({ input: { userId, limit = 20, cursor }, ctx }) => {
+      const currentUserId = ctx.session?.user.id;
+
+      const data = await ctx.prisma.user.findMany({
+        take: limit + 1,
+        cursor: cursor,
+        where: { follows: { some: { id: userId } } },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          image: true,
+          followers:
+            currentUserId == null ? false : { where: { id: currentUserId } },
+        },
+      });
+
+      let nextCursor: typeof cursor | undefined;
+
+      if (data.length > limit) {
+        const nextItem = data.pop();
+        if (nextItem != null) {
+          nextCursor = { id: nextItem.id };
+        }
+      }
+
+      return {
+        following: data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          username: item.username,
+          image: item.image,
+          isFollowing: item.followers.length > 0,
+        })),
+        nextCursor,
+      };
+    }),
+  infiniteFollowers: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        limit: z.number().optional(),
+        cursor: z.object({ id: z.string() }).optional(),
+      })
+    )
+    .query(async ({ input: { userId, limit = 20, cursor }, ctx }) => {
+      const currentUserId = ctx.session?.user.id;
+
+      const data = await ctx.prisma.user.findMany({
+        take: limit + 1,
+        cursor: cursor,
+        where: { followers: { some: { id: userId } } },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          image: true,
+          followers:
+            currentUserId == null ? false : { where: { id: currentUserId } },
+        },
+      });
+
+      let nextCursor: typeof cursor | undefined;
+
+      if (data.length > limit) {
+        const nextItem = data.pop();
+        if (nextItem != null) {
+          nextCursor = { id: nextItem.id };
+        }
+      }
+
+      return {
+        followers: data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          username: item.username,
+          image: item.image,
+          isFollowing: item.followers.length > 0,
+        })),
+        nextCursor,
+      };
+    }),
+  getSuggestions: protectedProcedure.query(async ({ ctx }) => {
+    const currentUserId = ctx.session?.user.id;
+
+    const data = await ctx.prisma.user.findMany({
+      take: 3,
+      where: {
+        NOT: { id: currentUserId },
+        followers: { none: { id: currentUserId } },
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        image: true,
+        _count: {
+          select: {
+            followers: true,
+          },
+        },
+      },
+      orderBy: {
+        followers: {
+          _count: "desc",
+        },
+      },
+    });
+
+    return data.map((item) => ({
+      id: item.id,
+      name: item.name,
+      username: item.username,
+      image: item.image,
+      isFollowing: false,
+    }));
+  }),
 });

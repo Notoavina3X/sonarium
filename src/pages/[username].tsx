@@ -25,10 +25,12 @@ import type {
 import Head from "next/head";
 import { useRouter } from "next/router";
 import ErrorPage from "next/error";
-import { type Key, useState } from "react";
+import { type Key, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import InfinitePostList from "@/components/core/ui/infinite-post-list";
 import { Profile } from "@/types";
+import InfiniteFollowerList from "@/components/core/ui/infinite-follower-list";
+import InfiniteFollowingList from "@/components/core/ui/infinite-following-list";
 
 const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   username,
@@ -98,8 +100,13 @@ function ProfileInfo({ profile }: { profile: Profile }) {
   const { data: sessionData } = useSession();
 
   const trpcUtils = api.useContext();
+  const notify = api.notification.create.useMutation({
+    onSuccess: async () => {
+      await trpcUtils.notification.getCount.refetch();
+    },
+  });
   const toggleFollow = api.profile.toggleFollow.useMutation({
-    onSuccess: ({ addedFollow }) => {
+    onSuccess: async ({ addedFollow }) => {
       trpcUtils.profile.getByUsername.setData(
         { username: profile.username ?? "stone310" },
         (oldData) => {
@@ -113,6 +120,72 @@ function ProfileInfo({ profile }: { profile: Profile }) {
           };
         }
       );
+
+      const updateData: Parameters<
+        typeof trpcUtils.post.infiniteFeed.setInfiniteData
+      >[1] = (oldData) => {
+        if (oldData == null) return;
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => {
+            return {
+              ...page,
+              posts: page.posts.map((oldPost) => {
+                if (oldPost.user.id === profile.id) {
+                  return {
+                    ...oldPost,
+                    user: {
+                      ...oldPost.user,
+                      isFollowing: addedFollow,
+                    },
+                  };
+                }
+
+                return oldPost;
+              }),
+            };
+          }),
+        };
+      };
+
+      trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData);
+      trpcUtils.post.infiniteFeed.setInfiniteData(
+        { onlyBookmarked: true },
+        updateData
+      );
+      trpcUtils.post.infiniteProfileFeed.setInfiniteData(
+        { userId: profile.id },
+        updateData
+      );
+      await trpcUtils.profile.getSuggestions.invalidate();
+
+      if (addedFollow) {
+        notify.mutate({
+          userId: profile.id,
+          text: "",
+          content: { id: "", type: "follow", postId: "" },
+        });
+      } else {
+        trpcUtils.post.infiniteFeed.setInfiniteData(
+          { onlyFollowing: true },
+          (oldData) => {
+            if (oldData == null) return;
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => {
+                return {
+                  ...page,
+                  posts: page.posts.filter(
+                    (oldPost) => oldPost.user.id !== profile.id
+                  ),
+                };
+              }),
+            };
+          }
+        );
+      }
     },
   });
 
@@ -195,6 +268,7 @@ function ProfileInfo({ profile }: { profile: Profile }) {
         <ModalContent>
           <ModalBody>
             <Ship
+              userId={profile.id}
               tabKey={tabKey}
               followersCount={profile.followersCount}
               followsCount={profile.followsCount}
@@ -207,13 +281,40 @@ function ProfileInfo({ profile }: { profile: Profile }) {
 }
 
 type ShipProps = {
+  userId: string;
   tabKey: string;
   followersCount: number;
   followsCount: number;
 };
 
-function Ship({ tabKey, followersCount, followsCount }: ShipProps) {
+function Ship({ userId, tabKey, followersCount, followsCount }: ShipProps) {
   const [selectedTab, setSelectedTab] = useState<Key>(tabKey);
+
+  const followers = api.profile.infiniteFollowers.useInfiniteQuery(
+    { userId },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    }
+  );
+
+  const following = api.profile.infiniteFollowing.useInfiniteQuery(
+    { userId },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    }
+  );
+
+  useEffect(() => {
+    if (selectedTab == "followers") {
+      async () => {
+        await followers.refetch();
+      };
+    } else {
+      async () => {
+        await following.refetch();
+      };
+    }
+  }, [selectedTab, followers, following]);
 
   return (
     <Tabs
@@ -233,10 +334,22 @@ function Ship({ tabKey, followersCount, followsCount }: ShipProps) {
           "Followers"
         )}`}
       >
-        Followers
+        <InfiniteFollowerList
+          followers={followers.data?.pages.flatMap((page) => page.followers)}
+          isLoading={followers.isLoading}
+          isError={followers.isError}
+          hasMore={followers.hasNextPage}
+          fetchNewFollowers={() => followers.fetchNextPage()}
+        />
       </Tab>
       <Tab key={"following"} title={`${followsCount} Following`}>
-        Following
+        <InfiniteFollowingList
+          following={following.data?.pages.flatMap((page) => page.following)}
+          isLoading={following.isLoading}
+          isError={following.isError}
+          hasMore={following.hasNextPage}
+          fetchNewFollowing={() => following.fetchNextPage()}
+        />
       </Tab>
     </Tabs>
   );

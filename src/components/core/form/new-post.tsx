@@ -21,7 +21,14 @@ import {
 import { useSession } from "next-auth/react";
 import { Icon } from "@iconify/react";
 import SearchBar from "./search-bar";
-import { type Key, useState, useEffect, useCallback, useMemo } from "react";
+import {
+  type Key,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type KeyboardEvent,
+} from "react";
 import spotifyApi from "@/lib/spotifyApi";
 import { getToken } from "@/utils/spotify-get-token";
 import User from "../ui/user";
@@ -52,11 +59,21 @@ function NewPost() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const onModalOpenChange = () => setIsModalOpen(!isModalOpen);
 
+  const notify = api.notification.create.useMutation({
+    onSuccess: ({ notifications }) => {
+      console.log(notifications);
+    },
+  });
   const createPost = api.post.create.useMutation({
     onSuccess: (newPost) => {
       setIsModalOpen(false);
       setTrackSelected(null);
       toast.success("Post created successfully");
+      notify.mutate({
+        userId: newPost.userId,
+        text: newPost.description,
+        content: { id: newPost.id, type: "post", postId: newPost.id },
+      });
     },
     onError: () => {
       toast.error("Error appeared while posting");
@@ -65,6 +82,21 @@ function NewPost() {
 
   const handleSubmit = () => {
     createPost.mutate({ description, track: trackSelected, tags });
+  };
+
+  const handleKeyEvent = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (description?.length == 0) {
+        e.preventDefault();
+      } else if (
+        !e.shiftKey &&
+        description?.length &&
+        description?.length > 0
+      ) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    }
   };
 
   useEffect(() => {
@@ -112,6 +144,7 @@ function NewPost() {
                 }}
                 value={description}
                 onValueChange={setDescription}
+                onKeyDown={handleKeyEvent}
               />
             </div>
             {trackSelected ? (

@@ -2,6 +2,7 @@ import InfiniteCommentList from "@/components/core/ui/infinite-comment-list";
 import SinglePostCard from "@/components/core/ui/single-post-card";
 import Navbar from "@/layouts/core/navbar";
 import { ssgHelper } from "@/server/api/ssgHelper";
+import type { Post } from "@/types";
 import { api } from "@/utils/api";
 import { getTags } from "@/utils/methods";
 import { Icon } from "@iconify/react";
@@ -53,25 +54,30 @@ const SinglePost: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
         <SinglePostCard post={post} />
         <CommentSection id={post?.id} />
       </section>
-      <SinglePostComment id={post?.id} />
+      <SinglePostComment post={post} />
     </div>
   );
 };
 
-const SinglePostComment = ({ id }: { id: string | undefined }) => {
+const SinglePostComment = ({ post }: { post: Post | undefined }) => {
   const { data: sessionData, status } = useSession();
 
   const [content, setContent] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
 
   const trpcUtils = api.useContext();
+  const notify = api.notification.create.useMutation({
+    onSuccess: async () => {
+      await trpcUtils.notification.getCount.refetch();
+    },
+  });
   const createComment = api.comment.createComment.useMutation({
     onSuccess: (newComment) => {
       setContent("");
       if (status !== "authenticated") return;
       else {
-        if (id) {
-          trpcUtils.post.getById.setData({ id }, (oldData) => {
+        if (post?.id) {
+          trpcUtils.post.getById.setData({ id: post.id }, (oldData) => {
             if (oldData == null) return;
 
             const countModifier = newComment ? 1 : 0;
@@ -81,10 +87,55 @@ const SinglePostComment = ({ id }: { id: string | undefined }) => {
             };
           });
 
+          if (newComment.postId != sessionData.user.id) {
+            notify.mutate({
+              userId: post.user.id,
+              text: post.description,
+              content: { id: post.id, type: "comment", postId: post.id },
+            });
+          }
+
+          const updateData: Parameters<
+            typeof trpcUtils.post.infiniteFeed.setInfiniteData
+          >[1] = (oldData) => {
+            if (oldData == null) return;
+
+            const countModifier = newComment ? 1 : -1;
+
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => {
+                return {
+                  ...page,
+                  posts: page.posts.map((oldPost) => {
+                    if (oldPost.id === newComment.postId) {
+                      return {
+                        ...oldPost,
+                        commentCount: oldPost.commentCount + countModifier,
+                      };
+                    }
+
+                    return oldPost;
+                  }),
+                };
+              }),
+            };
+          };
+
+          trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData);
+          trpcUtils.post.infiniteFeed.setInfiniteData(
+            { onlyFollowing: true },
+            updateData
+          );
+          trpcUtils.post.infiniteProfileFeed.setInfiniteData(
+            { userId: newComment.userId },
+            updateData
+          );
+
           trpcUtils.comment.infiniteComment.setInfiniteData(
-            { postId: id },
+            { postId: post.id },
             (oldData) => {
-              if (oldData == null || oldData.pages[0] == null) return;
+              if (oldData?.pages[0] == null) return;
 
               const newCacheComment = {
                 ...newComment,
@@ -127,7 +178,7 @@ const SinglePostComment = ({ id }: { id: string | undefined }) => {
   };
 
   const handleSend = () => {
-    if (id) createComment.mutate({ postId: id, content, tags });
+    if (post?.id) createComment.mutate({ postId: post.id, content, tags });
     else return;
   };
 
@@ -140,14 +191,16 @@ const SinglePostComment = ({ id }: { id: string | undefined }) => {
   }, [content]);
 
   return (
-    <Card className="sticky bottom-2 z-50 mt-2 bg-content3 px-2 shadow-none dark:bg-content1">
-      <div className="grid grid-cols-[40px_auto_32px] items-center gap-2 p-2">
-        <Avatar
-          name={sessionData?.user.name ?? undefined}
-          size="sm"
-          radius="sm"
-          src={sessionData?.user.image ?? undefined}
-        />
+    <Card className="sticky bottom-2 z-50 mt-2 bg-content3 shadow-none dark:bg-content1">
+      <div className="grid w-full grid-cols-[56px_auto_64px] rounded-xl py-2">
+        <div className="py-2 pl-4">
+          <Avatar
+            name={sessionData?.user.name ?? undefined}
+            size="sm"
+            radius="sm"
+            src={sessionData?.user.image ?? undefined}
+          />
+        </div>
         <Textarea
           minRows={1}
           maxLength={150}
@@ -156,17 +209,29 @@ const SinglePostComment = ({ id }: { id: string | undefined }) => {
           value={content}
           onValueChange={setContent}
           onKeyDown={handleKeyEvent}
+          classNames={{
+            inputWrapper: [
+              "bg-transparent",
+              "data-[hover=true]:bg-transparent",
+              "group-data-[focus-visible=true]:ring-0",
+              "group-data-[focus=true]:bg-transparent",
+              "outline-none",
+              "shadow-none",
+            ],
+          }}
         />
-        <Button
-          isIconOnly
-          color="primary"
-          size="sm"
-          variant="flat"
-          isDisabled={content.length == 0}
-          onPress={handleSend}
-        >
-          <Icon icon="heroicons:paper-airplane-solid" className="text-lg" />
-        </Button>
+        <div className="px-4 py-2">
+          <Button
+            isIconOnly
+            color="primary"
+            size="sm"
+            variant="flat"
+            isDisabled={content.length == 0}
+            onPress={handleSend}
+          >
+            <Icon icon="heroicons:paper-airplane-solid" className="text-lg" />
+          </Button>
+        </div>
       </div>
     </Card>
   );
@@ -180,7 +245,6 @@ const CommentSection = ({ id }: { id: string | undefined }) => {
 
   return (
     <Card className="w-full bg-content1/20 p-2 shadow-none">
-      {/* <InfiniteScroll></InfiniteScroll> */}
       <InfiniteCommentList
         comments={comments.data?.pages.flatMap((page) => page.comments)}
         isError={comments.isError}

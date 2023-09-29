@@ -27,13 +27,20 @@ import { useAtom } from "jotai";
 import { toast } from "sonner";
 import SentenceLinked from "./sentence-linked";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 export default function SinglePostCard({ post }: { post: Post | undefined }) {
+  const { data: sessionData } = useSession();
   const [sharingPost, setSharingPost] = useAtom(sharingPostAtom);
   const [isModalOpen, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
 
   const trpcUtils = api.useContext();
+  const notify = api.notification.create.useMutation({
+    onSuccess: async ({ notifications }) => {
+      await trpcUtils.notification.getCount.refetch();
+    },
+  });
   const toggleLike = api.post?.toggleLike.useMutation({
     onSuccess: ({ addedLike }) => {
       if (post?.id) {
@@ -48,6 +55,52 @@ export default function SinglePostCard({ post }: { post: Post | undefined }) {
             isLiked: addedLike,
           };
         });
+
+        if (addedLike && post.user.id != sessionData?.user.id) {
+          notify.mutate({
+            userId: post.user.id,
+            text: post.description,
+            content: { id: post.id, type: "like", postId: post.id },
+          });
+        }
+
+        const updateData: Parameters<
+          typeof trpcUtils.post.infiniteFeed.setInfiniteData
+        >[1] = (oldData) => {
+          if (oldData == null) return;
+
+          const countModifier = addedLike ? 1 : -1;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) => {
+              return {
+                ...page,
+                posts: page.posts.map((oldPost) => {
+                  if (oldPost.id === post.id) {
+                    return {
+                      ...oldPost,
+                      likeCount: oldPost.likeCount + countModifier,
+                      isLiked: addedLike,
+                    };
+                  }
+
+                  return oldPost;
+                }),
+              };
+            }),
+          };
+        };
+
+        trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData);
+        trpcUtils.post.infiniteFeed.setInfiniteData(
+          { onlyFollowing: true },
+          updateData
+        );
+        trpcUtils.post.infiniteProfileFeed.setInfiniteData(
+          { userId: post.user.id },
+          updateData
+        );
       }
     },
   });
@@ -66,6 +119,15 @@ export default function SinglePostCard({ post }: { post: Post | undefined }) {
             isBookmarked: addedBookmark,
           };
         });
+
+        if (addedBookmark && post.user.id != sessionData?.user.id) {
+          notify.mutate({
+            userId: post.user.id,
+            text: post.description,
+            content: { id: post.id, type: "bookmark", postId: post.id },
+          });
+        }
+
         const updateData: Parameters<
           typeof trpcUtils.post.infiniteFeed.setInfiniteData
         >[1] = (oldData) => {
@@ -164,7 +226,7 @@ export default function SinglePostCard({ post }: { post: Post | undefined }) {
               className="bg-transparent px-0 text-xs text-foreground-500"
               size="sm"
             >
-              {dateFormater.format(post?.createdAt)}
+              {post?.createdAt && dateFormater(post.createdAt)}
             </Chip>
           </div>
           <Dropdown
@@ -275,7 +337,7 @@ export default function SinglePostCard({ post }: { post: Post | undefined }) {
                     className="bg-transparent px-0 text-xs text-foreground-500"
                     size="sm"
                   >
-                    {dateFormater.format(post.sharedPost.createdAt)}
+                    {dateFormater(post.sharedPost.createdAt)}
                   </Chip>
                 </div>
               </CardHeader>

@@ -160,6 +160,15 @@ export const commentRouter = createTRPCRouter({
         return { addedLike: false };
       }
     }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input: { id }, ctx }) => {
+      const deletedComment = await ctx.prisma.comment.delete({ where: { id } });
+
+      return {
+        isDeleted: !!deletedComment,
+      };
+    }),
 });
 
 async function getInfiniteComments({

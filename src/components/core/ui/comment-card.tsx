@@ -13,8 +13,20 @@ const CommentCard = ({ comment }: { comment: Comment }) => {
   const [viewReplies, setViewReplies] = useState<boolean>(false);
 
   const trpcUtils = api.useContext();
+  const notify = api.notification.create.useMutation({
+    onSuccess: async ({ notifications }) => {
+      await trpcUtils.notification.getCount.refetch();
+    },
+  });
   const toggleLike = api.comment.toggleLike.useMutation({
     onSuccess: ({ addedLike }) => {
+      if (addedLike) {
+        notify.mutate({
+          userId: comment.user.id,
+          text: comment.content,
+          content: { id: comment.id, type: "like", postId: comment.postId },
+        });
+      }
       const updateData: Parameters<
         typeof trpcUtils.comment.infiniteComment.setInfiniteData
       >[1] = (oldData) => {
@@ -62,7 +74,7 @@ const CommentCard = ({ comment }: { comment: Comment }) => {
   };
 
   return (
-    <div className="group my-2 grid grid-cols-[40px_auto] gap-2">
+    <div className="group my-2 grid grid-cols-[40px_auto] gap-2 pl-2">
       <Avatar
         as={Link}
         href={`/${comment.user.username}`}
@@ -87,7 +99,7 @@ const CommentCard = ({ comment }: { comment: Comment }) => {
               />
             </p>
             <div className="flex gap-3 p-1 text-[13px] text-foreground-500">
-              <span>{dateFormater.format(comment.createdAt)}</span>
+              <span>{dateFormater(comment.createdAt)}</span>
               <span
                 className="cursor-pointer hover:underline"
                 onClick={() => void setIsReplying(true)}
@@ -129,6 +141,7 @@ const CommentCard = ({ comment }: { comment: Comment }) => {
             id={comment.id}
             postId={comment.postId}
             parentId={comment.parentId}
+            parentContent={comment.content}
             closeReply={() => void setIsReplying(false)}
           />
         )}
@@ -166,6 +179,7 @@ type ReplyCommentProps = {
   id: string;
   postId: string;
   parentId: string | null;
+  parentContent: string;
   closeReply: () => void;
 };
 
@@ -173,6 +187,7 @@ const ReplyComment = ({
   id,
   postId,
   parentId,
+  parentContent,
   closeReply,
 }: ReplyCommentProps) => {
   const { data: sessionData, status } = useSession();
@@ -181,6 +196,11 @@ const ReplyComment = ({
   const [tags, setTags] = useState<string[]>([]);
 
   const trpcUtils = api.useContext();
+  const notify = api.notification.create.useMutation({
+    onSuccess: async ({ notifications }) => {
+      await trpcUtils.notification.getCount.refetch();
+    },
+  });
   const replyComment = api.comment.replyComment.useMutation({
     onSuccess: (newReply) => {
       setContent("");
@@ -254,6 +274,12 @@ const ReplyComment = ({
             }
           );
         }
+
+        notify.mutate({
+          userId: newReply.userId,
+          text: parentContent,
+          content: { id: newReply.id, type: "reply", postId },
+        });
       }
     },
   });

@@ -38,6 +38,7 @@ export type User = {
   name: string | null;
   username: string | null;
   image: string | null;
+  isFollowing: boolean;
 };
 
 export type Post = {
@@ -100,4 +101,20 @@ export type Profile = {
   followsCount: number;
   postsCount: number;
   isFollowing: boolean;
+};
+
+export type Notif = {
+  message: string;
+  id: string;
+  createdAt: Date;
+  author: {
+    username: string | null;
+    image: string | null;
+  } | null;
+  content: {
+    id: string;
+    type: string;
+    postId: string;
+  };
+  isRead: boolean;
 };

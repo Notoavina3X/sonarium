@@ -13,7 +13,7 @@ import {
 } from "@nextui-org/react";
 import User from "../ui/user";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { sharingPostAtom } from "@/store";
 import { useAtom } from "jotai";
 import { dateFormater, getTags } from "@/utils/methods";
@@ -29,14 +29,23 @@ function SharePost() {
 
   const [sharingPost, setSharingPost] = useAtom(sharingPostAtom);
 
-  const onModalOpenChange = () =>
+  const onModalOpenChange = () => {
     setSharingPost((data) => ({ ...data, isSharing: !data.isSharing }));
+    setDescription(undefined);
+    setTags([]);
+  };
 
   const trpcUtils = api.useContext();
+  const notify = api.notification.create.useMutation({
+    onSuccess: async ({ notifications }) => {
+      await trpcUtils.notification.getCount.refetch();
+    },
+  });
   const share = api.post.share.useMutation({
     onSuccess: (newPost) => {
-      setSharingPost((data) => ({ ...data, isSharing: false }));
-      setSharingPost((data) => ({ ...data, postSelected: undefined }));
+      setSharingPost({ postSelected: undefined, isSharing: false });
+      setDescription(undefined);
+      setTags([]);
       toast.success("Post shared successfully");
 
       const updateData: Parameters<
@@ -84,6 +93,29 @@ function SharePost() {
           };
         }
       );
+
+      if (sharingPost?.postSelected) {
+        if (sharingPost.postSelected.user.id != sessionData?.user.id) {
+          notify.mutate({
+            userId: sharingPost.postSelected.user.id,
+            text: sharingPost.postSelected.description,
+            content: {
+              id: sharingPost.postSelected.id,
+              type: "share",
+              postId: sharingPost.postSelected.id,
+            },
+          });
+        }
+        notify.mutate({
+          userId: newPost.userId,
+          text: newPost.description,
+          content: {
+            id: newPost.id,
+            type: "post",
+            postId: newPost.id,
+          },
+        });
+      }
     },
     onError: () => {
       toast.error("Error appeared while sharing");
@@ -95,6 +127,21 @@ function SharePost() {
       share.mutate({ description, postId: sharingPost.postSelected.id, tags });
   };
 
+  const handleKeyEvent = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (description?.length == 0) {
+        e.preventDefault();
+      } else if (
+        !e.shiftKey &&
+        description?.length &&
+        description?.length > 0
+      ) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    }
+  };
+
   useEffect(() => {
     if (description) {
       setTags(getTags(description));
@@ -103,7 +150,7 @@ function SharePost() {
 
   return (
     <Modal
-      isOpen={sharingPost.isSharing}
+      isOpen={sharingPost.isSharing && !!sharingPost.postSelected}
       onOpenChange={onModalOpenChange}
       placement="auto"
       size="xl"
@@ -141,6 +188,7 @@ function SharePost() {
             }}
             value={description}
             onValueChange={setDescription}
+            onKeyDown={handleKeyEvent}
           />
         </ModalHeader>
         <ModalBody>
@@ -161,7 +209,8 @@ function SharePost() {
                   className="bg-transparent px-0 text-xs text-foreground-500"
                   size="sm"
                 >
-                  {dateFormater.format(sharingPost.postSelected?.createdAt)}
+                  {sharingPost.postSelected &&
+                    dateFormater(sharingPost.postSelected.createdAt)}
                 </Chip>
               </div>
             </CardHeader>

@@ -1,4 +1,3 @@
-import Loader from "@/components/global/Loader";
 import PostCard from "./post-card";
 import { type Post } from "@/types";
 import InfiniteScroll from "react-infinite-scroll-component";
