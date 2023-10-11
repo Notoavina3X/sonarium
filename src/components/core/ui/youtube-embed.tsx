@@ -57,7 +57,7 @@ function YoutubeEmbed({ track }: { track: TrackSelected }) {
   };
 
   return (
-    <div className="relative grid h-20 w-full grid-cols-[64px_auto] gap-4 rounded-xl bg-red-600/20 p-2">
+    <div className="relative mb-4 grid h-20 w-full grid-cols-[64px_auto] gap-4 rounded-xl bg-red-600/20 p-2">
       <Link href={track?.url} isExternal>
         <Image
           src={track?.image}

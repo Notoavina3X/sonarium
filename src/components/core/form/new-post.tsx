@@ -59,21 +59,45 @@ function NewPost() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const onModalOpenChange = () => setIsModalOpen(!isModalOpen);
 
+  const trpcUtils = api.useContext();
   const notify = api.notification.create.useMutation({
     onSuccess: ({ notifications }) => {
       console.log(notifications);
     },
   });
   const createPost = api.post.create.useMutation({
-    onSuccess: (newPost) => {
+    onSuccess: ({ newPost }) => {
       setIsModalOpen(false);
       setTrackSelected(null);
       toast.success("Post created successfully");
       notify.mutate({
-        userId: newPost.userId,
         text: newPost.description,
         content: { id: newPost.id, type: "post", postId: newPost.id },
       });
+      if (newPost) {
+        const updateData: Parameters<
+          typeof trpcUtils.post.infiniteFeed.setInfiniteData
+        >[1] = (oldData) => {
+          if (oldData?.pages[0] == null) return;
+
+          return {
+            ...oldData,
+            pages: [
+              {
+                ...oldData.pages[0],
+                posts: [newPost, ...oldData.pages[0].posts],
+              },
+              ...oldData.pages.slice(1),
+            ],
+          };
+        };
+
+        trpcUtils.post.infiniteFeed.setInfiniteData({}, updateData);
+        trpcUtils.post.infiniteProfileFeed.setInfiniteData(
+          { userId: newPost.user.id },
+          updateData
+        );
+      }
     },
     onError: () => {
       toast.error("Error appeared while posting");

@@ -27,6 +27,7 @@ import {
   trackSelectedAtom,
   commentAtom,
   deleteAtom,
+  updatePostAtom,
 } from "@/store";
 import { useAtom } from "jotai";
 import Link from "next/link";
@@ -36,6 +37,7 @@ import { useSession } from "next-auth/react";
 function PostCard({ post }: { post: Post }) {
   const { data: sessionData } = useSession();
 
+  const [updatePost, setUpdatePost] = useAtom(updatePostAtom);
   const [sharingPost, setSharingPost] = useAtom(sharingPostAtom);
   const [isModalOpen, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
@@ -57,7 +59,7 @@ function PostCard({ post }: { post: Post }) {
 
   const handleUserClick = () => {
     if (!isDropdownOpen) {
-      router.push(`/${post.user.id}`).catch((err) => {
+      router.push(`/${post.user.username}`).catch((err) => {
         console.log(err);
         toast.error("Error while redirecting");
       });
@@ -426,6 +428,20 @@ function PostCard({ post }: { post: Post }) {
                 <DropdownItem
                   key="delete"
                   startContent={
+                    <Icon icon="solar:pen-2-linear" className="text-lg" />
+                  }
+                  onPress={() =>
+                    void setUpdatePost({
+                      postSelected: post,
+                      isUpdating: true,
+                    })
+                  }
+                >
+                  <span className="font-semibold">Edit caption</span>
+                </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  startContent={
                     <Icon icon="solar:trash-bin-2-linear" className="text-lg" />
                   }
                   onPress={() =>
@@ -451,7 +467,7 @@ function PostCard({ post }: { post: Post }) {
           </p>
           {post.track && (
             <div className="group relative w-full">
-              <EmbedPlayer track={post.track} />
+              <EmbedPlayer track={JSON.parse(JSON.stringify(post.track))} />
               <div className="absolute -right-3 -top-3 hidden group-hover:flex">
                 <Tooltip content="Use this track">
                   <Button
@@ -510,7 +526,9 @@ function PostCard({ post }: { post: Post }) {
                 </p>
                 {post.sharedPost.track && (
                   <div className="group relative w-full">
-                    <EmbedPlayer track={post.sharedPost.track} />
+                    <EmbedPlayer
+                      track={JSON.parse(JSON.stringify(post.sharedPost.track))}
+                    />
                     <div className="absolute -right-3 -top-3 hidden group-hover:flex">
                       <Tooltip content="Use this track">
                         <Button

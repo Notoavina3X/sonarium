@@ -2,15 +2,29 @@ import type { Comment } from "@/types";
 import { api } from "@/utils/api";
 import { dateFormater, getPlural, getTags } from "@/utils/methods";
 import { Icon } from "@iconify/react";
-import { Avatar, Button, Textarea } from "@nextui-org/react";
+import {
+  Avatar,
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Textarea,
+} from "@nextui-org/react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState, type KeyboardEvent, useEffect } from "react";
 import SentenceLinked from "./sentence-linked";
+import { deleteAtom } from "@/store";
+import { useAtom } from "jotai";
 
 const CommentCard = ({ comment }: { comment: Comment }) => {
+  const { data: sessionData } = useSession();
+
   const [isReplying, setIsReplying] = useState<boolean>(false);
   const [viewReplies, setViewReplies] = useState<boolean>(false);
+
+  const [deleting, setDeleting] = useAtom(deleteAtom);
 
   const trpcUtils = api.useContext();
   const notify = api.notification.create.useMutation({
@@ -110,10 +124,49 @@ const CommentCard = ({ comment }: { comment: Comment }) => {
           </div>
           {/* Options and Like section */}
           <div className="flex flex-col items-center">
-            <Icon
-              icon="solar:menu-dots-bold"
-              className="invisible cursor-pointer group-hover:visible"
-            />
+            <Dropdown
+              placement="bottom-end"
+              backdrop="opaque"
+              classNames={{ base: "bg-content3 dark:bg-content1" }}
+            >
+              <DropdownTrigger>
+                <Icon
+                  icon="solar:menu-dots-bold"
+                  className="invisible cursor-pointer group-hover:visible"
+                />
+              </DropdownTrigger>
+              <DropdownMenu>
+                {comment.userId == sessionData?.user.id ? (
+                  <DropdownItem
+                    key="delete"
+                    startContent={
+                      <Icon
+                        icon="solar:trash-bin-2-linear"
+                        className="text-lg"
+                      />
+                    }
+                    onPress={() =>
+                      void setDeleting({
+                        type: "comment",
+                        instance: comment,
+                        isDeleting: true,
+                      })
+                    }
+                  >
+                    <span className="font-semibold">Delete this post</span>
+                  </DropdownItem>
+                ) : (
+                  <DropdownItem
+                    key="report"
+                    startContent={
+                      <Icon icon="solar:flag-linear" className="text-lg" />
+                    }
+                  >
+                    <span className="font-semibold">Report post</span>
+                  </DropdownItem>
+                )}
+              </DropdownMenu>
+            </Dropdown>
             <div className="flex flex-col items-center">
               <Button
                 isIconOnly

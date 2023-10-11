@@ -24,23 +24,22 @@ import type {
 } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import ErrorPage from "next/error";
 import { type Key, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import InfinitePostList from "@/components/core/ui/infinite-post-list";
 import { Profile } from "@/types";
 import InfiniteFollowerList from "@/components/core/ui/infinite-follower-list";
 import InfiniteFollowingList from "@/components/core/ui/infinite-following-list";
+import InfiniteTrackList from "@/components/core/ui/infinite-track-list";
+import ProfilePageSkeleton from "@/components/core/skeleton/profile-page-skeleton";
+import { isEditingAtom } from "@/store";
+import EditProfile from "@/components/core/form/edit-profile";
+import { useAtom } from "jotai";
 
 const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   username,
 }) => {
-  const { data: profile } = api.profile.getByUsername.useQuery({ username });
-
-  const posts = api.post.infiniteProfileFeed.useInfiniteQuery(
-    { userId: profile?.id ?? "stone310" },
-    { getNextPageParam: (lastPage) => lastPage.nextCursor }
-  );
+  const getProfile = api.profile.getByUsername.useQuery({ username });
 
   const router = useRouter();
 
@@ -48,14 +47,13 @@ const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
     router.back();
   };
 
-  if (profile?.name == null) {
-    return <ErrorPage statusCode={404} />;
-  }
+  if (getProfile.isLoading) return <ProfilePageSkeleton />;
+  if (!getProfile?.data) return "This user doesn't exist";
 
   return (
     <div className="min-h-screen grow">
       <Head>
-        <title>{`${profile.username} | Sonarium`}</title>
+        <title>{`${getProfile.data.username} | Sonarium`}</title>
       </Head>
       <Navbar>
         <div className="flex items-center justify-start gap-4">
@@ -70,25 +68,50 @@ const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
             <Icon icon="solar:arrow-left-linear" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">{profile.name}</h1>
+            <h1 className="text-xl font-bold">{getProfile.data.name}</h1>
             <span className="text-xs text-foreground-500">
-              {profile.postsCount}{" "}
-              {getPlural(profile.postsCount, "Post", "Posts")}
+              {getProfile.data.postsCount}{" "}
+              {getPlural(getProfile.data.postsCount, "Post", "Posts")}
             </span>
           </div>
         </div>
       </Navbar>
       <section className="flex w-full flex-col items-center gap-2">
-        <ProfileInfo profile={profile} />
-        <ul className="w-full">
-          <InfinitePostList
-            posts={posts.data?.pages.flatMap((page) => page.posts)}
-            isError={posts.isError}
-            isLoading={posts.isLoading}
-            hasMore={posts.hasNextPage}
-            fetchNewPosts={posts.fetchNextPage}
-          />
-        </ul>
+        <ProfileInfo profile={getProfile.data} />
+        <Tabs
+          size="lg"
+          color="primary"
+          variant="underlined"
+          classNames={{
+            base: ["bg-background", "w-full", "flex", "justify-center"],
+            tabList: ["w-full"],
+            tab: ["font-semibold", "h-10"],
+            panel: ["w-full", "py-0"],
+          }}
+        >
+          <Tab
+            key="posts"
+            title={
+              <div className="flex items-center space-x-3">
+                <Icon icon="solar:feed-bold" />
+                <span>Posts</span>
+              </div>
+            }
+          >
+            {getProfile.data.id && <PostFeed userId={getProfile.data.id} />}
+          </Tab>
+          <Tab
+            key="tracks"
+            title={
+              <div className="flex items-center space-x-2">
+                <Icon icon="solar:turntable-music-note-bold" />
+                <span>Songs used</span>
+              </div>
+            }
+          >
+            {getProfile.data.id && <TrackFeed userId={getProfile.data.id} />}
+          </Tab>
+        </Tabs>
       </section>
     </div>
   );
@@ -96,6 +119,9 @@ const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
 
 function ProfileInfo({ profile }: { profile: Profile }) {
   const [tabKey, setTabKey] = useState("followers");
+
+  const [isEditing, setIsEditing] = useAtom(isEditingAtom);
+
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { data: sessionData } = useSession();
 
@@ -210,9 +236,9 @@ function ProfileInfo({ profile }: { profile: Profile }) {
             <h2 className="text-lg font-bold">{profile.name}</h2>
             <span className="text-sm opacity-70">@{profile.username}</span>
           </div>
-          <div className="flex justify-center gap-4">
-            <span className="text-sm font-semibold">
-              {profile.followersCount}{" "}
+          <div className="grid grid-cols-3 gap-4">
+            <span className="flex flex-col items-center gap-2 font-semibold">
+              <span>{profile.followersCount}</span>
               <NextUILink
                 onPress={() => void handleShipClick("followers")}
                 className="cursor-pointer opacity-70"
@@ -222,8 +248,8 @@ function ProfileInfo({ profile }: { profile: Profile }) {
                 {getPlural(profile.followersCount, "Follower", "Followers")}
               </NextUILink>
             </span>
-            <span className="text-sm font-semibold">
-              {profile.followsCount}{" "}
+            <span className="flex flex-col items-center gap-2 font-semibold">
+              <span>{profile.followsCount}</span>
               <NextUILink
                 onPress={() => void handleShipClick("following")}
                 className="cursor-pointer opacity-70"
@@ -233,8 +259,19 @@ function ProfileInfo({ profile }: { profile: Profile }) {
                 Following
               </NextUILink>
             </span>
+            <span className="flex flex-col items-center gap-2 font-semibold">
+              <span>{profile.likesCount}</span>
+              <NextUILink
+                isDisabled
+                className="cursor-pointer opacity-70"
+                size="sm"
+                color="foreground"
+              >
+                {getPlural(profile.likesCount, "Like", "Likes")}
+              </NextUILink>
+            </span>
           </div>
-          {profile.id != sessionData?.user.id && (
+          {profile.id != sessionData?.user.id ? (
             <Button
               size="md"
               className="w-32 font-bold"
@@ -254,6 +291,15 @@ function ProfileInfo({ profile }: { profile: Profile }) {
               }
             >
               {profile.isFollowing ? "Unfollow" : "Follow"}
+            </Button>
+          ) : (
+            <Button
+              size="md"
+              className="w-32 font-bold"
+              variant="solid"
+              onPress={() => void setIsEditing(true)}
+            >
+              Edit profile
             </Button>
           )}
         </CardBody>
@@ -276,6 +322,7 @@ function ProfileInfo({ profile }: { profile: Profile }) {
           </ModalBody>
         </ModalContent>
       </Modal>
+      <EditProfile />
     </>
   );
 }
@@ -352,6 +399,44 @@ function Ship({ userId, tabKey, followersCount, followsCount }: ShipProps) {
         />
       </Tab>
     </Tabs>
+  );
+}
+
+function PostFeed({ userId }: { userId: string }) {
+  const posts = api.post.infiniteProfileFeed.useInfiniteQuery(
+    { userId },
+    { getNextPageParam: (lastPage) => lastPage.nextCursor }
+  );
+
+  return (
+    <ul className="w-full">
+      <InfinitePostList
+        posts={posts.data?.pages.flatMap((page) => page.posts)}
+        isError={posts.isError}
+        isLoading={posts.isLoading}
+        hasMore={posts.hasNextPage}
+        fetchNewPosts={posts.fetchNextPage}
+      />
+    </ul>
+  );
+}
+
+function TrackFeed({ userId }: { userId: string }) {
+  const postTracks = api.profile.infiniteTracks.useInfiniteQuery(
+    { userId },
+    { getNextPageParam: (lastPage) => lastPage.nextCursor }
+  );
+
+  return (
+    <ul className="w-full">
+      <InfiniteTrackList
+        postTracks={postTracks.data?.pages.flatMap((page) => page.postTracks)}
+        isError={postTracks.isError}
+        isLoading={postTracks.isLoading}
+        hasMore={postTracks.hasNextPage}
+        fetchNewPostTracks={postTracks.fetchNextPage}
+      />
+    </ul>
   );
 }
 

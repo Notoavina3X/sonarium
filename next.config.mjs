@@ -3,9 +3,21 @@
  * for Docker builds.
  */
 await import("./src/env.mjs");
+import config from "./next-i18next.config.mjs";
 
-/** @type {import("next").NextConfig} */
-const config = {
+/**
+ * Don't be scared of the generics here.
+ * All they do is to give us autocompletion when using this.
+ *
+ * @template {import('next').NextConfig} T
+ * @param {T} config - A generic parameter that flows through to the return type
+ * @constraint {{import('next').NextConfig}}
+ */
+function defineNextConfig(config) {
+  return config;
+}
+
+export default defineNextConfig({
   reactStrictMode: true,
   images: { domains: ["lh3.googleusercontent.com", "cdn.discordapp.com"] },
 
@@ -15,10 +27,5 @@ const config = {
    *
    * @see https://github.com/vercel/next.js/issues/41980
    */
-  i18n: {
-    locales: ["en"],
-    defaultLocale: "en",
-  },
-};
-
-export default config;
+  i18n: config.i18n,
+});

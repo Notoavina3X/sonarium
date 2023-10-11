@@ -295,7 +295,7 @@ export default function SinglePostCard({ post }: { post: Post | undefined }) {
           </p>
           {post?.track && (
             <div className="group relative w-full">
-              <EmbedPlayer track={post?.track} />
+              <EmbedPlayer track={JSON.parse(JSON.stringify(post.track))} />
               <div className="absolute -right-3 -top-3 hidden group-hover:flex">
                 <Tooltip content="Use this track">
                   <Button
@@ -354,7 +354,9 @@ export default function SinglePostCard({ post }: { post: Post | undefined }) {
                 </p>
                 {post.sharedPost.track && (
                   <div className="group relative w-full">
-                    <EmbedPlayer track={post.sharedPost.track} />
+                    <EmbedPlayer
+                      track={JSON.parse(JSON.stringify(post.sharedPost.track))}
+                    />
                     <div className="absolute -right-3 -top-3 hidden group-hover:flex">
                       <Tooltip content="Use this track">
                         <Button

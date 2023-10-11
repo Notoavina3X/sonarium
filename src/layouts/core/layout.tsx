@@ -6,6 +6,7 @@ import BottomNav from "./bottom-nav";
 import SharePost from "@/components/core/form/share-post";
 import CommentPost from "@/components/core/form/comment-post";
 import ConfirmPopup from "@/components/core/ui/confirm-popup";
+import UpdatePost from "@/components/core/form/update-post";
 
 type LayoutProps = {
   children: ReactNode;
@@ -17,6 +18,7 @@ function Layout({ children }: LayoutProps) {
       {children}
       <NewPost />
       <SharePost />
+      <UpdatePost />
       <CommentPost />
       <ConfirmPopup />
       <RightSidebar />

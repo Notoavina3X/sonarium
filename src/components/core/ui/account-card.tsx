@@ -136,15 +136,17 @@ function AccountCard({ user }: { user: UserType }) {
           src: user.image ?? undefined,
         }}
       />
-      <Button
-        size="sm"
-        variant={user.isFollowing ? "light" : "flat"}
-        color="primary"
-        className="font-semibold"
-        onPress={handleToggleFollow}
-      >
-        {user.isFollowing ? "Unfollow" : "Follow"}
-      </Button>
+      {user.id !== sessionData?.user.id && (
+        <Button
+          size="sm"
+          variant={user.isFollowing ? "light" : "flat"}
+          color="primary"
+          className="font-semibold"
+          onPress={handleToggleFollow}
+        >
+          {user.isFollowing ? "Unfollow" : "Follow"}
+        </Button>
+      )}
     </div>
   );
 }

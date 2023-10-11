@@ -92,6 +92,7 @@ export const notificationRouter = createTRPCRouter({
 
       const followers = await ctx.prisma.user.findMany({
         where: {
+          id: { not: currentUserId },
           followers: { some: { id: currentUserId } },
         },
         select: {

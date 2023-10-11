@@ -166,7 +166,7 @@ export const commentRouter = createTRPCRouter({
       const deletedComment = await ctx.prisma.comment.delete({ where: { id } });
 
       return {
-        isDeleted: !!deletedComment,
+        isDeleted: deletedComment,
       };
     }),
 });

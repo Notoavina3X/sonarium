@@ -107,7 +107,6 @@ function SharePost() {
           });
         }
         notify.mutate({
-          userId: newPost.userId,
           text: newPost.description,
           content: {
             id: newPost.id,
@@ -219,7 +218,11 @@ function SharePost() {
                 {sharingPost.postSelected?.description}
               </p>
               {sharingPost.postSelected?.track && (
-                <EmbedPlayer track={sharingPost.postSelected?.track} />
+                <EmbedPlayer
+                  track={JSON.parse(
+                    JSON.stringify(sharingPost.postSelected.track)
+                  )}
+                />
               )}
             </CardBody>
           </Card>

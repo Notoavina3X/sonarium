@@ -1,3 +1,4 @@
+import { exploreQueryAtom, exploreTabAtom, toQueryAtom } from "@/store";
 import { api } from "@/utils/api";
 import {
   Card,
@@ -7,9 +8,17 @@ import {
   CardFooter,
   Link as NextUILink,
 } from "@nextui-org/react";
-import Link from "next/link";
+import { useAtom } from "jotai";
+import { useRouter } from "next/router";
+import { toast } from "sonner";
 
 function TopTrends() {
+  const router = useRouter();
+
+  const [exploreQuery, setExploreQuery] = useAtom(exploreQueryAtom);
+  const [exploreTab, setExploreTab] = useAtom(exploreTabAtom);
+  const [toQuery, setToQuery] = useAtom(toQueryAtom);
+
   const top = api.tag.getTop.useQuery({ limit: 5 });
 
   return (
@@ -27,8 +36,21 @@ function TopTrends() {
         ) : (
           <ul className="flex flex-col gap-3 text-sm font-bold">
             {top.data?.tags.map((tag) => (
-              <li key={tag.id}>
-                <Link href={`/explore/tag/${tag.name}`}>{tag.name}</Link>
+              <li
+                key={tag.id}
+                onClick={() => {
+                  setExploreQuery(tag.name);
+                  setExploreTab("posts");
+                  setToQuery(tag.name);
+                  if (router.pathname !== "/explore")
+                    router.push("/explore").catch((err) => {
+                      console.error(err);
+                      toast.error("Error while redirecting");
+                    });
+                }}
+                className="cursor-pointer"
+              >
+                {tag.name}
               </li>
             ))}
           </ul>

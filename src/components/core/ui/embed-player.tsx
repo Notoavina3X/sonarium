@@ -1,4 +1,4 @@
-import { type TrackSelected } from "@/store/track-selected-atom";
+import { type TrackSelected } from "@/store";
 import YoutubeEmbed from "./youtube-embed";
 import SpotifyEmbed from "./spotify-embed";
 

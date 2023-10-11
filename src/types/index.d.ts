@@ -100,6 +100,7 @@ export type Profile = {
   followersCount: number;
   followsCount: number;
   postsCount: number;
+  likesCount: number;
   isFollowing: boolean;
 };
 

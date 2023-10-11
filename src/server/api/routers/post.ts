@@ -195,6 +195,8 @@ export const postRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { description, tags, track }, ctx }) => {
+      const currentUserId = ctx.session.user.id;
+
       const data: {
         userId: string;
         description: string | undefined;
@@ -233,9 +235,93 @@ export const postRouter = createTRPCRouter({
         };
       }
 
-      const post = await ctx.prisma.post.create({ data });
+      const post = await ctx.prisma.post.create({
+        data,
+        include: {
+          tags: {
+            select: {
+              name: true,
+            },
+          },
+          sharedPost: {
+            select: {
+              id: true,
+              description: true,
+              tags: {
+                select: {
+                  name: true,
+                },
+              },
+              track: true,
+              createdAt: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  username: true,
+                  image: true,
+                  followers:
+                    currentUserId == null
+                      ? undefined
+                      : {
+                          where: { id: currentUserId },
+                        },
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+              followers:
+                currentUserId == null
+                  ? undefined
+                  : {
+                      where: { id: currentUserId },
+                    },
+            },
+          },
+        },
+      });
 
-      return post;
+      return {
+        newPost: {
+          id: post.id,
+          sharedPost: post.sharedPost
+            ? {
+                ...post.sharedPost,
+                tags: post.sharedPost?.tags.map((tag) => tag.name),
+                user: {
+                  id: post.sharedPost?.user.id,
+                  name: post.sharedPost?.user.name,
+                  username: post.sharedPost?.user.username,
+                  image: post.sharedPost?.user.image,
+                  isFollowing: post.sharedPost?.user.followers.length > 0,
+                },
+              }
+            : undefined,
+          description: post.description,
+          tags: post.tags.map((tag) => tag.name),
+          track: post.track,
+          createdAt: post.createdAt,
+          user: {
+            id: post.user.id,
+            name: post.user.name,
+            username: post.user.username,
+            image: post.user.image,
+            isFollowing: post.user.followers.length > 0,
+          },
+          isLiked: false,
+          isBookmarked: false,
+          likeCount: 0,
+          commentCount: 0,
+          sharedCount: 0,
+          bookmarkCount: 0,
+        },
+      };
     }),
   share: protectedProcedure
     .input(
@@ -313,6 +399,55 @@ export const postRouter = createTRPCRouter({
         return { addedBookmark: false };
       }
     }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        description: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+      })
+    )
+    .mutation(async ({ input: { id, description, tags }, ctx }) => {
+      const currentUserId = ctx.session?.user.id;
+
+      const data: {
+        description: string | undefined;
+        tags?: {
+          connectOrCreate: {
+            where: { name: string };
+            create: { name: string };
+          }[];
+        };
+      } = {
+        description,
+      };
+
+      if (tags && tags.length > 0) {
+        data.tags = {
+          connectOrCreate: tags.map((tag) => {
+            return {
+              where: { name: tag },
+              create: { name: tag },
+            };
+          }),
+        };
+      }
+
+      const updatedPost = await ctx.prisma.post.update({
+        where: { id, userId: currentUserId },
+        data,
+        include: {
+          tags: true,
+        },
+      });
+
+      return {
+        isUpdated: {
+          ...updatedPost,
+          tags: updatedPost.tags.map((tag) => tag.name),
+        },
+      };
+    }),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input: { id }, ctx }) => {
@@ -331,12 +466,12 @@ export const postRouter = createTRPCRouter({
       });
 
       return {
-        isDeleted: !!deletedPost,
+        isDeleted: deletedPost,
       };
     }),
 });
 
-async function getInfinitePosts({
+export async function getInfinitePosts({
   whereClause,
   ctx,
   limit,

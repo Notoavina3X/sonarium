@@ -26,6 +26,7 @@ export default function Feed() {
           ],
           tabList: ["w-2/3"],
           tab: ["text-lg", "font-bold", "h-10"],
+          panel: ["py-0"],
         }}
       >
         <Tab key="foryou" title="For You">

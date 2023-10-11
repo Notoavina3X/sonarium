@@ -61,6 +61,7 @@ model User {
     notified      Notification[] @relation(name: "Author")
     commentLikes  CommentLike[]
     bookmarks     Bookmark[]
+    histories     History[]
 }
 
 model Post {
@@ -87,6 +88,8 @@ model Tag {
     name     String    @unique
     posts    Post[]
     comments Comment[]
+
+    @@index([id])
 }
 
 model Like {
@@ -152,6 +155,17 @@ model Notification {
     author    User?    @relation(name: "Author", fields: [authorId], references: [id], onDelete: Cascade)
 
     @@unique([createdAt, id])
+    @@index([userId])
+}
+
+model History {
+    id        String   @id @default(cuid())
+    userId    String
+    term      String
+    createdAt DateTime @default(now())
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, term])
     @@index([userId])
 }
 
