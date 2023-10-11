@@ -6,7 +6,7 @@ const config = {
   reloadOnPrerender: process.env.NODE_ENV === "development",
   i18n: {
     locales: ["en", "fr"],
-    defaultLocale: "en",
+    defaultLocale: "fr",
   },
   localePath: path.resolve("./public/locales"),
 };
