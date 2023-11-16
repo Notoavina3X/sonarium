@@ -35,6 +35,7 @@ import ProfilePageSkeleton from "@/components/core/skeleton/profile-page-skeleto
 import { isEditingAtom } from "@/store";
 import EditProfile from "@/components/core/form/edit-profile";
 import { useAtom } from "jotai";
+import ErrorIllustration from "@/components/global/error-illustration";
 
 const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   username,
@@ -48,7 +49,17 @@ const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   };
 
   if (getProfile.isLoading) return <ProfilePageSkeleton />;
-  if (!getProfile?.data) return "This user doesn't exist";
+  if (!getProfile?.data)
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center gap-4">
+        <h1 className="text-4xl font-bold opacity-70">
+          Cannot find user @{username}
+        </h1>
+        <div className="grid w-2/3 place-items-center">
+          <ErrorIllustration />
+        </div>
+      </div>
+    );
 
   return (
     <div className="min-h-screen grow">
