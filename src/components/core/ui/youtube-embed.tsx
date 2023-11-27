@@ -3,7 +3,7 @@ import { CircularProgress, Image, Link } from "@nextui-org/react";
 import { useState, useEffect, createRef } from "react";
 import YouTube from "react-youtube";
 import CopyButton from "@/components/global/copy-button";
-import { type TrackSelected } from "@/store/track-selected-atom";
+import type { TrackSelected } from "@/store";
 
 function YoutubeEmbed({ track }: { track: TrackSelected }) {
   const [isPlaying, setIsPlaying] = useState(false);
