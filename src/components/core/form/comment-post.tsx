@@ -113,7 +113,8 @@ function CommentPost() {
 
           trpcUtils.comment.infiniteComment.setInfiniteData(
             { postId: comment.postSelected.id },
-            (oldData) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (oldData: any) => {
               if (oldData?.pages[0] == null) return;
 
               const newCacheComment = {
