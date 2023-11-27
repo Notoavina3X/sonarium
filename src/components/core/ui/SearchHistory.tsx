@@ -6,7 +6,7 @@ import { useAtom } from "jotai";
 export function SearchHistory() {
   const [exploreQuery, setExploreQuery] = useAtom(exploreQueryAtom);
 
-  const { data: histories } = api.history.getByTerm.useQuery({
+  const { data: histories } = api.history.getHistory.useQuery({
     term: exploreQuery,
   });
   return (
