@@ -23,6 +23,10 @@ export const env = createEnv({
     // Add `.min(1) on ID and SECRET if you want to make sure they're not empty
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
+    FACEBOOK_CLIENT_ID: z.string(),
+    FACEBOOK_CLIENT_SECRET: z.string(),
   },
 
   /**
@@ -32,6 +36,15 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string().min(1),
+    NEXT_PUBLIC_RAPIDAPI_KEY: z.string(),
+    NEXT_PUBLIC_YOUTUBE_API_KEY: z.string(),
+    NEXT_PUBLIC_SPOTIFY_CLIENT_ID: z.string(),
+    NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET: z.string(),
+    NEXT_PUBLIC_SPOTIFY_ACCESS_TOKEN: z.string(),
+    NEXT_PUBLIC_SUPABASE_URL: z.string(),
+    NEXT_PUBLIC_SUPABASE_KEY: z.string(),
+    NEXT_PUBLIC_SUPABASE_BUCKET: z.string(),
+    NEXT_PUBLIC_IMAGE_SERVER: z.string(),
   },
 
   /**
@@ -45,6 +58,21 @@ export const env = createEnv({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    FACEBOOK_CLIENT_ID: process.env.FACEBOOK_CLIENT_ID,
+    FACEBOOK_CLIENT_SECRET: process.env.FACEBOOK_CLIENT_SECRET,
+    NEXT_PUBLIC_RAPIDAPI_KEY: process.env.NEXT_PUBLIC_RAPIDAPI_KEY,
+    NEXT_PUBLIC_YOUTUBE_API_KEY: process.env.NEXT_PUBLIC_YOUTUBE_API_KEY,
+    NEXT_PUBLIC_SPOTIFY_CLIENT_ID: process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
+    NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET:
+      process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET,
+    NEXT_PUBLIC_SPOTIFY_ACCESS_TOKEN:
+      process.env.NEXT_PUBLIC_SPOTIFY_ACCESS_TOKEN,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_KEY: process.env.NEXT_PUBLIC_SUPABASE_KEY,
+    NEXT_PUBLIC_SUPABASE_BUCKET: process.env.NEXT_PUBLIC_SUPABASE_BUCKET,
+    NEXT_PUBLIC_IMAGE_SERVER: process.env.NEXT_PUBLIC_IMAGE_SERVER,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation.

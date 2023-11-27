@@ -6,18 +6,13 @@ generator client {
 }
 
 datasource db {
-    provider = "sqlite"
+    provider     = "mysql"
     // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
     // Further reading:
     // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
     // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-    url      = env("DATABASE_URL")
-}
-
-model Example {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    url          = env("DATABASE_URL")
+    relationMode = "foreignKeys"
 }
 
 // Necessary for Next auth
@@ -27,12 +22,12 @@ model Account {
     type              String
     provider          String
     providerAccountId String
-    refresh_token     String? // @db.Text
-    access_token      String? // @db.Text
+    refresh_token     String? @db.Text
+    access_token      String? @db.Text
     expires_at        Int?
     token_type        String?
     scope             String?
-    id_token          String? // @db.Text
+    id_token          String? @db.Text
     session_state     String?
     user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -55,6 +50,124 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
+
+    // Non-next-auth
+    username      String?        @unique @default("")
+    followers     User[]         @relation(name: "Followers")
+    follows       User[]         @relation(name: "Followers")
+    posts         Post[]
+    likes         Like[]
+    comments      Comment[]
+    notifications Notification[] @relation(name: "Owner")
+    notified      Notification[] @relation(name: "Author")
+    commentLikes  CommentLike[]
+    bookmarks     Bookmark[]
+    histories     History[]
+}
+
+model Post {
+    id          String     @id @default(cuid())
+    userId      String
+    sharedId    String?
+    description String?
+    track       Json?
+    createdAt   DateTime   @default(now())
+    sharedPost  Post?      @relation(name: "Shares", fields: [sharedId], references: [id], onDelete: Cascade)
+    user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    tags        Tag[]
+    likes       Like[]
+    comments    Comment[]
+    subposts    Post[]     @relation(name: "Shares")
+    bookmarks   Bookmark[]
+
+    @@unique([createdAt, id])
+    @@index([userId])
+}
+
+model Tag {
+    id       String    @id @default(cuid())
+    name     String    @unique
+    posts    Post[]
+    comments Comment[]
+
+    @@index([id])
+}
+
+model Like {
+    userId String
+    postId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+    @@id([userId, postId])
+    @@index([userId])
+    @@index([postId])
+}
+
+model CommentLike {
+    userId    String
+    commentId String
+    user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+    @@id([userId, commentId])
+    @@index([userId])
+    @@index([commentId])
+}
+
+model Comment {
+    id            String        @id @default(cuid())
+    userId        String
+    postId        String
+    parentId      String?
+    content       String
+    createdAt     DateTime      @default(now())
+    user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+    post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+    parentComment Comment?      @relation(name: "Replies", fields: [parentId], references: [id], onDelete: Cascade)
+    replies       Comment[]     @relation(name: "Replies")
+    commentLikes  CommentLike[]
+    tags          Tag[]
+
+    @@unique([createdAt, userId, postId])
+    @@index([userId])
+    @@index([postId])
+}
+
+model Bookmark {
+    userId    String
+    postId    String
+    createdAt DateTime @default(now())
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+    @@id([userId, postId])
+}
+
+model Notification {
+    id        String   @id @default(cuid())
+    authorId  String?
+    userId    String
+    message   String
+    content   Json
+    isRead    Boolean  @default(false)
+    createdAt DateTime @default(now())
+    user      User     @relation(name: "Owner", fields: [userId], references: [id], onDelete: Cascade)
+    author    User?    @relation(name: "Author", fields: [authorId], references: [id], onDelete: Cascade)
+
+    @@unique([createdAt, id])
+    @@index([userId])
+}
+
+model History {
+    id        String   @id @default(cuid())
+    userId    String
+    term      String
+    createdAt DateTime @default(now())
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, term])
+    @@index([userId])
 }
 
 model VerificationToken {
