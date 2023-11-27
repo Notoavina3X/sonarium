@@ -15,7 +15,6 @@ import Layout from "@/layouts/core/layout";
 import PrivateRoute from "@/utils/private-route";
 import { Provider } from "jotai";
 import { I18nProvider } from "locales";
-import en from "locales/en";
 
 const MyApp = ({
   Component,
@@ -26,7 +25,7 @@ const MyApp = ({
   const { toastTheme } = useToastTheme();
 
   return (
-    <I18nProvider locale={locale} fallbackLocale={en}>
+    <I18nProvider locale={locale}>
       <SessionProvider session={session}>
         <Head>
           <title>Sonarium</title>
