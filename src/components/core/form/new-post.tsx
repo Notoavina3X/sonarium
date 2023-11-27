@@ -303,9 +303,20 @@ const AddTrack = () => {
 
   useEffect(() => {
     if (selectedTab === "spotify")
-      setPlaceholder(
-        `${scopedT("placeholder.spotify")} ${scopedT("by." + selectedValue)}`
-      );
+      setPlaceholder(() => {
+        switch (selectedValue) {
+          case "default":
+            return `${scopedT("placeholder.spotify")} ${scopedT("by.default")}`;
+          case "artist":
+            return `${scopedT("placeholder.spotify")} ${scopedT("by.artist")}`;
+          case "album":
+            return `${scopedT("placeholder.spotify")} ${scopedT("by.album")}`;
+          case "track":
+            return `${scopedT("placeholder.spotify")} ${scopedT("by.track")}`;
+          default:
+            return undefined;
+        }
+      });
     else setPlaceholder(`${scopedT("placeholder.youtube")} YouTube`);
   }, [selectedTab, selectedValue, scopedT]);
 
