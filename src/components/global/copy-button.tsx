@@ -8,7 +8,7 @@ function CopyButton({ text }: { text: string | undefined }) {
 
   const copyToClipboard = () => {
     navigator.clipboard
-      .writeText(text)
+      .writeText(text ?? "")
       .then(() => {
         setCopied(true);
         toast.success("Copied to clipboard");
