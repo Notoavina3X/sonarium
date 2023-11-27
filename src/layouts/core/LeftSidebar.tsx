@@ -23,13 +23,9 @@ import { isModalOpenAtom, trackSelectedAtom, unreadAtom } from "@/store";
 import { useAtom } from "jotai";
 import { api } from "@/utils/api";
 import { useScopedI18n } from "locales";
+import { variants } from "./left-sidebar";
 
-const variants = {
-  open: { minWidth: "300px" },
-  close: { minWidth: "75px" },
-};
-
-function LeftSidebar() {
+export function LeftSidebar() {
   const scopedT = useScopedI18n("sidebar.left");
   const { data: sessionData } = useSession();
   const user = sessionData?.user;
@@ -47,23 +43,6 @@ function LeftSidebar() {
   const handleNewPost = () => {
     setTrackSelected(null);
     setIsModalOpen(true);
-  };
-
-  const handleTitleI18 = (title: string) => {
-    switch (title) {
-      case "Home":
-        return scopedT("Home");
-      case "Explore":
-        return scopedT("Explore");
-      case "Notifications":
-        return scopedT("Notifications");
-      case "Settings & Support":
-        return scopedT("Settings & Support");
-      case "Bookmarks":
-        return scopedT("Bookmarks");
-      default:
-        return title;
-    }
   };
 
   useEffect(() => {
@@ -130,7 +109,7 @@ function LeftSidebar() {
                 <li key={title}>
                   <Tooltip
                     color="primary"
-                    content={`${scopedT("goto")} ${handleTitleI18(title)}`}
+                    content={`${scopedT("goto")} ${scopedT(title)}`}
                     placement="right"
                     className={cn(isExpand && "hidden")}
                   >
@@ -165,7 +144,7 @@ function LeftSidebar() {
                           />
                         </Badge>
                       )}
-                      {isExpand && <span>{handleTitleI18(title)}</span>}
+                      {isExpand && <span>{scopedT(title)}</span>}
                     </Link>
                   </Tooltip>
                 </li>
@@ -281,5 +260,3 @@ function LeftSidebar() {
     </motion.div>
   );
 }
-
-export default LeftSidebar;

@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import LeftSidebar from "./left-sidebar";
+import LeftSidebar from "./LeftSidebar";
 import RightSidebar from "./right-sidebar";
 import NewPost from "@/components/core/form/new-post";
 import BottomNav from "./bottom-nav";
