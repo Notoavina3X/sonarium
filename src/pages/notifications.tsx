@@ -12,9 +12,12 @@ import {
   DropdownTrigger,
 } from "@nextui-org/react";
 import { useAtom } from "jotai";
+import { useScopedI18n } from "locales";
 import Head from "next/head";
 
 function Notifications() {
+  const scopedT = useScopedI18n("notification");
+
   const [unread, setUnread] = useAtom(unreadAtom);
 
   const trpcUtils = api.useContext();
@@ -96,7 +99,7 @@ function Notifications() {
                 isReadOnly={unread == 0}
                 onPress={handleReadAllClick}
               >
-                <span className="font-semibold">Make all as read</span>
+                <span className="font-semibold">{scopedT("readAll")}</span>
               </DropdownItem>
               <DropdownItem
                 key="manage"
@@ -104,7 +107,7 @@ function Notifications() {
                   <Icon icon="solar:settings-linear" className="text-lg" />
                 }
               >
-                <span className="font-semibold">Manage notifications</span>
+                <span className="font-semibold">{scopedT("manage")}</span>
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>

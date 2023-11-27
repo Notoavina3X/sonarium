@@ -3,12 +3,15 @@ import Head from "next/head";
 import InfinitePostList from "@/components/core/ui/infinite-post-list";
 import { Tab, Tabs } from "@nextui-org/react";
 import NeedFollowIllustration from "@/components/global/need-to-follow-illustration";
+import { useScopedI18n } from "locales";
 
 export default function Feed() {
+  const scopedT = useScopedI18n("home");
+
   return (
     <div className="relative min-h-screen grow">
       <Head>
-        <title>Home | Sonarium</title>
+        <title>{scopedT("title")} | Sonarium</title>
       </Head>
       <Tabs
         aria-label="feed"
@@ -29,12 +32,12 @@ export default function Feed() {
           panel: ["py-0"],
         }}
       >
-        <Tab key="foryou" title="For You">
+        <Tab key="foryou" title={scopedT("tab.foryou")}>
           <section className="flex flex-col gap-2">
             <ForYou />
           </section>
         </Tab>
-        <Tab key="following" title="Following">
+        <Tab key="following" title={scopedT("tab.following")}>
           <section className="flex flex-col gap-2">
             <Following />
           </section>
@@ -62,6 +65,7 @@ function ForYou() {
 }
 
 function Following() {
+  const scopedT = useScopedI18n("home");
   const posts = api.post.infiniteFeed.useInfiniteQuery(
     { onlyFollowing: true },
     { getNextPageParam: (lastPage) => lastPage.nextCursor }
@@ -71,7 +75,7 @@ function Following() {
     return (
       <div className="mx-auto flex h-[calc(100dvh-100px)] w-2/3 flex-col items-center justify-center gap-4 opacity-50">
         <NeedFollowIllustration />
-        <h1 className="text-lg font-bold">Start following people</h1>
+        <h1 className="text-lg font-bold">{scopedT("startFollowing")}</h1>
       </div>
     );
 

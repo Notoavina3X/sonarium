@@ -9,10 +9,12 @@ import {
   Link as NextUILink,
 } from "@nextui-org/react";
 import { useAtom } from "jotai";
+import { useScopedI18n } from "locales";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
 
 function TopTrends() {
+  const scopedT = useScopedI18n("sidebar.right");
   const router = useRouter();
 
   const [exploreQuery, setExploreQuery] = useAtom(exploreQueryAtom);
@@ -23,7 +25,9 @@ function TopTrends() {
 
   return (
     <Card className="bg-content2/50 px-2 shadow-none">
-      <CardHeader className="text-xl font-black">Popular trends</CardHeader>
+      <CardHeader className="text-xl font-black">
+        {scopedT("popular")}
+      </CardHeader>
       <CardBody className="p-3">
         {top.isLoading ? (
           <ul className="flex flex-col gap-3 text-sm font-bold">
@@ -59,7 +63,7 @@ function TopTrends() {
       <CardFooter>
         {top.data?.tags?.length && top.data.tags.length > 5 && (
           <NextUILink href="/#" size="sm">
-            Show more
+            {scopedT("more")}
           </NextUILink>
         )}
       </CardFooter>

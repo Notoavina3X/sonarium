@@ -22,6 +22,7 @@ import { motion } from "framer-motion";
 import { isModalOpenAtom, trackSelectedAtom, unreadAtom } from "@/store";
 import { useAtom } from "jotai";
 import { api } from "@/utils/api";
+import { useScopedI18n } from "locales";
 
 const variants = {
   open: { minWidth: "300px" },
@@ -29,6 +30,7 @@ const variants = {
 };
 
 function LeftSidebar() {
+  const scopedT = useScopedI18n("sidebar.left");
   const { data: sessionData } = useSession();
   const user = sessionData?.user;
   const router = useRouter();
@@ -85,7 +87,7 @@ function LeftSidebar() {
           </Link>
           <Tooltip
             color="primary"
-            content={`${isExpand ? "Close" : "Open"} Menu`}
+            content={`${isExpand ? scopedT("close") : scopedT("open")} menu`}
             placement="right"
           >
             <Button
@@ -111,7 +113,7 @@ function LeftSidebar() {
                 <li key={title}>
                   <Tooltip
                     color="primary"
-                    content={`Go to ${title}`}
+                    content={`${scopedT("goto")} ${scopedT(title)}`}
                     placement="right"
                     className={cn(isExpand && "hidden")}
                   >
@@ -146,7 +148,7 @@ function LeftSidebar() {
                           />
                         </Badge>
                       )}
-                      {isExpand && <span>{title}</span>}
+                      {isExpand && <span>{scopedT(title)}</span>}
                     </Link>
                   </Tooltip>
                 </li>
@@ -156,7 +158,7 @@ function LeftSidebar() {
         </ul>
         <Tooltip
           color="primary"
-          content="New Post"
+          content={scopedT("newPost")}
           placement="right"
           className={cn(isExpand && "hidden")}
         >
@@ -168,7 +170,7 @@ function LeftSidebar() {
             onPress={() => void handleNewPost()}
           >
             {isExpand ? (
-              "New Post"
+              scopedT("newPost")
             ) : (
               <Icon icon="ph:plus-bold" className="text-xl" />
             )}
@@ -243,7 +245,7 @@ function LeftSidebar() {
                 <Icon icon="ph:arrows-counter-clockwise" className="text-lg" />
               }
             >
-              <span className="font-semibold">Switch account</span>
+              <span className="font-semibold">{scopedT("options.switch")}</span>
             </DropdownItem>
             <DropdownItem
               key="logout"
@@ -254,7 +256,7 @@ function LeftSidebar() {
               }
               onPress={() => void signOut()}
             >
-              <span className="font-semibold">Log out</span>
+              <span className="font-semibold">{scopedT("options.logout")}</span>
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>

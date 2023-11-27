@@ -1,6 +1,7 @@
 import Loader from "@/components/global/Loader";
 import { Icon } from "@iconify/react";
-import { Button, Card, CardBody, CardHeader, Input } from "@nextui-org/react";
+import { Button, Card, CardBody, CardHeader } from "@nextui-org/react";
+import { useI18n, useScopedI18n } from "locales";
 import { signIn, useSession } from "next-auth/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -29,6 +30,8 @@ const providers = [
 ];
 
 function SignIn() {
+  const t = useI18n();
+  const scopedT = useScopedI18n("auth");
   const { status } = useSession();
   const router = useRouter();
 
@@ -36,15 +39,15 @@ function SignIn() {
     try {
       await signIn(providerId);
     } catch (error) {
-      toast.error("Sorry, can't sign in!");
+      toast.error(t("error.signin"));
     }
   };
 
   useEffect(() => {
     if (status == "authenticated") {
-      router.push("/").catch(() => toast.error("Can't redirect to home page"));
+      router.push("/").catch(() => toast.error(t("error.redirect")));
     }
-  }, [status, router]);
+  }, [status, router, t]);
 
   if (status == "loading") {
     return (
@@ -55,39 +58,41 @@ function SignIn() {
   }
 
   return (
-    <div className="grid h-screen w-screen place-items-center bg-[url('/image/grid-orange.svg')] ">
+    <div className="flex h-screen w-screen flex-col items-center justify-center gap-5 bg-[url('/image/grid-orange.svg')] ">
       <Head>
-        <title>Sign In</title>
+        <title>{scopedT("title")}</title>
         <meta
           name="description"
           content="Sign in to Sonarium to get more content"
         />
       </Head>
       <div className="absolute left-0 top-0 z-0 h-screen w-screen bg-gradient-to-b from-transparent to-background"></div>
+      <h1 className="text-center text-5xl font-bold">{scopedT("welcome")}</h1>
       <Card className="rounded-3xl bg-content2 p-8 dark:bg-content1">
         <CardHeader className="flex justify-center">
           <div className="aspect-square h-14 bg-[url('/logo.svg')] bg-cover bg-center"></div>
         </CardHeader>
         <CardBody className="flex flex-col gap-2">
-          <h1 className="text-center font-semibold">Sign with</h1>
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-col justify-center gap-3">
             {providers.map((provider) => (
               <Button
                 size="lg"
                 key={provider.name}
-                className="bg-background"
+                className="flex justify-start gap-5 bg-background font-bold"
                 onPress={() => void handleLogin(provider.id)}
-                isIconOnly
               >
                 <Icon
                   inline
                   icon={`logos:${provider.icon}`}
                   className="text-lg"
                 />
+                <span className="text-sm">
+                  {scopedT("loginWith")} {provider.name}
+                </span>
               </Button>
             ))}
           </div>
-          <div className="relative my-2 flex w-full justify-center">
+          {/* <div className="relative my-2 flex w-full justify-center">
             <span className="relative z-10 max-w-fit rounded-full bg-content4 px-2 text-center">
               or
             </span>
@@ -104,7 +109,7 @@ function SignIn() {
             >
               Sign in
             </Button>
-          </div>
+          </div> */}
         </CardBody>
       </Card>
     </div>

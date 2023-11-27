@@ -13,11 +13,13 @@ import {
   cn,
 } from "@nextui-org/react";
 import { useAtom } from "jotai";
+import { useI18n, useScopedI18n } from "locales";
 import { useRouter } from "next/router";
 import { useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
 function RightSidebar() {
+  const t = useI18n();
   const router = useRouter();
 
   const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -42,11 +44,11 @@ function RightSidebar() {
         setToQuery(newHistory.term);
         router.push("/explore").catch((err) => {
           console.error(err);
-          toast.error("Sorry, error while redirecting");
+          toast.error("error.redirect");
         });
       }
     },
-    onError: () => toast.error("Error while searching"),
+    onError: () => toast.error(t("error.search")),
   });
 
   const handleSearch = (term: string) => {
@@ -103,11 +105,15 @@ function RightSidebar() {
 }
 
 const Suggestions = () => {
+  const scopedT = useScopedI18n("sidebar.right");
+
   const { data: suggestions } = api.profile.getSuggestions.useQuery();
 
   return (
     <Card className="bg-content2/50 px-2 shadow-none">
-      <CardHeader className="text-xl font-black">Suggestions</CardHeader>
+      <CardHeader className="text-xl font-black">
+        {scopedT("suggestion")}
+      </CardHeader>
       <CardBody className="p-3">
         <ul className="flex flex-col gap-5">
           {suggestions?.map((user) => (
@@ -120,7 +126,7 @@ const Suggestions = () => {
       <CardFooter>
         {suggestions && suggestions.length > 5 && (
           <NextUILink href="/#" size="sm">
-            Show more
+            {scopedT("more")}
           </NextUILink>
         )}
       </CardFooter>

@@ -45,8 +45,12 @@ import { api } from "@/utils/api";
 import { toast } from "sonner";
 import EmptyResult from "@/components/global/empty-result";
 import { getTags } from "@/utils/methods";
+import { useI18n, useScopedI18n } from "locales";
 
 function NewPost() {
+  const t = useI18n();
+  const scopedT = useScopedI18n("newpost");
+
   const { data: sessionData } = useSession();
   const user = sessionData?.user;
 
@@ -69,7 +73,7 @@ function NewPost() {
     onSuccess: ({ newPost }) => {
       setIsModalOpen(false);
       setTrackSelected(null);
-      toast.success("Post created successfully");
+      toast.success(t("success.posting"));
       notify.mutate({
         text: newPost.description,
         content: { id: newPost.id, type: "post", postId: newPost.id },
@@ -100,7 +104,7 @@ function NewPost() {
       }
     },
     onError: () => {
-      toast.error("Error appeared while posting");
+      toast.error(t("error.posting"));
     },
   });
 
@@ -152,7 +156,7 @@ function NewPost() {
               />
               <Textarea
                 minRows={2}
-                placeholder="What's on your mind?"
+                placeholder={scopedT("view.textarea")}
                 size="lg"
                 radius="none"
                 classNames={{
@@ -192,7 +196,7 @@ function NewPost() {
                 }}
               >
                 <Icon icon="ph:plus-bold" className="text-xl" />
-                <span>Add Track</span>
+                <span>{scopedT("view.add")}</span>
               </button>
             )}
           </ModalBody>
@@ -204,7 +208,7 @@ function NewPost() {
               onPress={() => void handleSubmit()}
               isLoading={createPost.isLoading}
             >
-              Post
+              {scopedT("view.post")}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -266,6 +270,8 @@ function NewPost() {
 }
 
 const AddTrack = () => {
+  const scopedT = useScopedI18n("newpost.track");
+
   const [selectedTab, setSelectedTab] = useState<Key>("spotify");
   const [selectedFilter, setSelectedFilter] = useState<Selection>(
     new Set(["default"])
@@ -296,9 +302,12 @@ const AddTrack = () => {
   };
 
   useEffect(() => {
-    if (selectedTab === "spotify") setPlaceholder(`Search by ${selectedValue}`);
-    else setPlaceholder("Search on YouTube");
-  }, [selectedTab, selectedValue]);
+    if (selectedTab === "spotify")
+      setPlaceholder(
+        `${scopedT("placeholder.spotify")} ${scopedT("by." + selectedValue)}`
+      );
+    else setPlaceholder(`${scopedT("placeholder.youtube")} YouTube`);
+  }, [selectedTab, selectedValue, scopedT]);
 
   return (
     <>
@@ -335,7 +344,7 @@ const AddTrack = () => {
                 />
               }
             >
-              By default
+              {scopedT("by.prepos")} {scopedT("by.default")}
             </DropdownItem>
             <DropdownItem
               key="track"
@@ -343,7 +352,7 @@ const AddTrack = () => {
                 <Icon icon="iconamoon:music-1-light" className="text-lg" />
               }
             >
-              By track
+              {scopedT("by.prepos")} {scopedT("by.track")}
             </DropdownItem>
             <DropdownItem
               key="artist"
@@ -351,7 +360,7 @@ const AddTrack = () => {
                 <Icon icon="iconamoon:music-artist-light" className="text-lg" />
               }
             >
-              By artist
+              {scopedT("by.prepos")} {scopedT("by.artist")}
             </DropdownItem>
             <DropdownItem
               key="album"
@@ -359,7 +368,7 @@ const AddTrack = () => {
                 <Icon icon="iconamoon:music-album-light" className="text-lg" />
               }
             >
-              By album
+              {scopedT("by.prepos")} {scopedT("by.album")}
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>
@@ -409,6 +418,8 @@ type SearchSpotifyProps = {
   findBy: string;
 };
 const SearchSpotify = ({ term, findBy }: SearchSpotifyProps) => {
+  const scopedT = useScopedI18n("newpost.track");
+
   const [trackList, setTrackList] = useAtom(tracklistAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
 
@@ -462,7 +473,7 @@ const SearchSpotify = ({ term, findBy }: SearchSpotifyProps) => {
           <EmptyResult />
         </div>
         <span className="font-bold">
-          {!term ? "You need to search something" : "There is no search result"}
+          {!term ? scopedT("need") : scopedT("noresult")}
         </span>
       </div>
     );
@@ -516,6 +527,8 @@ const SearchSpotify = ({ term, findBy }: SearchSpotifyProps) => {
 };
 
 const SearchYoutube = ({ term }: { term: string }) => {
+  const scopedT = useScopedI18n("newpost.track");
+
   const [trackList, setTrackList] = useAtom(tracklistAtom);
   const [trackSelected, setTrackSelected] = useAtom(trackSelectedAtom);
 
@@ -548,7 +561,7 @@ const SearchYoutube = ({ term }: { term: string }) => {
           <EmptyResult />
         </div>
         <span className="font-bold">
-          {!term ? "You need to search something" : "There is no search result"}
+          {!term ? scopedT("need") : scopedT("noresult")}
         </span>
       </div>
     );
