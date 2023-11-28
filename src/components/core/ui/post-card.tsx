@@ -367,7 +367,10 @@ function PostCard({ post }: { post: Post }) {
               >
                 <DropdownItem
                   key="see"
-                  startContent={<Icon icon="solar:chat-line-linear" />}
+                  onPress={handleCardClick}
+                  startContent={
+                    <Icon icon="solar:chat-line-linear" className="text-lg" />
+                  }
                 >
                   <span className="font-semibold">Open comment section</span>
                 </DropdownItem>
@@ -448,7 +451,10 @@ function PostCard({ post }: { post: Post }) {
                 </DropdownItem>
                 <DropdownItem
                   key="see"
-                  startContent={<Icon icon="solar:chat-line-linear" />}
+                  onPress={handleCardClick}
+                  startContent={
+                    <Icon icon="solar:chat-line-linear" className="text-lg" />
+                  }
                 >
                   <span className="font-semibold">Open comment section</span>
                 </DropdownItem>
