@@ -358,12 +358,19 @@ function PostCard({ post }: { post: Post }) {
                 <Icon icon="solar:menu-dots-bold" />
               </Button>
             </DropdownTrigger>
+
             {post.user.id != sessionData?.user.id ? (
               <DropdownMenu
                 variant="flat"
                 aria-label="More options"
                 className="bg-content3 dark:bg-content1"
               >
+                <DropdownItem
+                  key="see"
+                  startContent={<Icon icon="solar:chat-line-linear" />}
+                >
+                  <span className="font-semibold">Open comment section</span>
+                </DropdownItem>
                 <DropdownItem
                   key="not_interested"
                   startContent={
@@ -440,6 +447,12 @@ function PostCard({ post }: { post: Post }) {
                   <span className="font-semibold">Edit caption</span>
                 </DropdownItem>
                 <DropdownItem
+                  key="see"
+                  startContent={<Icon icon="solar:chat-line-linear" />}
+                >
+                  <span className="font-semibold">Open comment section</span>
+                </DropdownItem>
+                <DropdownItem
                   key="delete"
                   startContent={
                     <Icon icon="solar:trash-bin-2-linear" className="text-lg" />
@@ -458,10 +471,7 @@ function PostCard({ post }: { post: Post }) {
             )}
           </Dropdown>
         </CardHeader>
-        <CardBody
-          className="flex flex-col gap-4 px-3 py-2"
-          onClick={handleCardClick}
-        >
+        <CardBody className="flex flex-col gap-4 px-3 py-2">
           <p className="text-sm text-foreground-600">
             <SentenceLinked sentence={post.description} toLink={post.tags} />
           </p>
