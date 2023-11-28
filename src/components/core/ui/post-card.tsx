@@ -49,12 +49,10 @@ function PostCard({ post }: { post: Post }) {
   const router = useRouter();
 
   const handleCardClick = () => {
-    if (!isDropdownOpen) {
-      router.push(`/post/${post.id}`).catch((err) => {
-        console.log(err);
-        toast.error("Error while redirecting");
-      });
-    }
+    router.push(`/post/${post.id}`).catch((err) => {
+      console.log(err);
+      toast.error("Error while redirecting");
+    });
   };
 
   const handleUserClick = () => {
