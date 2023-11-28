@@ -345,7 +345,10 @@ function PostCard({ post }: { post: Post }) {
             placement="bottom-end"
             backdrop="opaque"
             onOpenChange={(isOpen) => setIsDropdownOpen(isOpen)}
-            classNames={{ base: "bg-content3 dark:bg-content1" }}
+            classNames={{
+              base: "bg-content3 dark:bg-content1 rounded-md",
+              content: "bg-content3 dark:bg-content1 rounded-md",
+            }}
           >
             <DropdownTrigger>
               <Button
