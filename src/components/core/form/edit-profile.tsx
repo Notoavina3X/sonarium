@@ -35,14 +35,12 @@ function EditProfile() {
   const [isEditing, setIsEditing] = useAtom(isEditingAtom);
 
   const updateProfile = api.profile.update.useMutation({
-    onSuccess: () => {
+    onSuccess: ({ updatedProfile }) => {
       toast.success("Profile updated successfully");
       onModalOpenChange();
-      if (router.pathname === `/[${sessionData?.user.username}]`) {
-        router.push(`/${sessionData?.user.username}`).catch(() => {
-          toast.error("Error while redirecting");
-        });
-      }
+      router.push(`/${updatedProfile.username}`).catch(() => {
+        toast.error("Error while redirecting");
+      });
     },
   });
 
