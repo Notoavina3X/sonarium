@@ -15,11 +15,14 @@ import {
 } from "@nextui-org/react";
 import { useAtom } from "jotai";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
 
 function EditProfile() {
   const { data: sessionData } = useSession();
+
+  const router = useRouter();
 
   const [userInfo, setUserInfo] = useState({
     name: sessionData?.user.name,
@@ -35,6 +38,11 @@ function EditProfile() {
     onSuccess: () => {
       toast.success("Profile updated successfully");
       onModalOpenChange();
+      if (router.pathname === `/[${sessionData?.user.username}]`) {
+        router.push(`/${sessionData?.user.username}`).catch(() => {
+          toast.error("Error while redirecting");
+        });
+      }
     },
   });
 

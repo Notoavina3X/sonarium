@@ -95,7 +95,7 @@ const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
                 isIconOnly
                 size="lg"
                 variant="light"
-                className="-mt-1 text-2xl"
+                className="-mt-1 block text-2xl lg:hidden"
                 aria-label="bookmark"
               >
                 <Icon icon="solar:bookmark-linear" />
