@@ -344,7 +344,7 @@ function PostCard({ post }: { post: Post }) {
             backdrop="opaque"
             onOpenChange={(isOpen) => setIsDropdownOpen(isOpen)}
             classNames={{
-              base: "bg-content3 dark:bg-content1 rounded-md",
+              base: "bg-content3 dark:bg-content1 rounded-md font-sans",
               content: "bg-content3 dark:bg-content1 rounded-md",
             }}
           >
