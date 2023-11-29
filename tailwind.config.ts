@@ -4,14 +4,17 @@ import { nextui } from "@nextui-org/react";
 export default {
   darkMode: "class",
   content: [
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
+  important: true,
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-montserrat)", "sans-serif"],
-        delaGothic: ["var(--font-delaGothic)", "sans-serif"],
+        sans: ["var(--font-montserrat)"],
+        delaGothic: ["var(--font-delaGothic)"],
       },
     },
   },

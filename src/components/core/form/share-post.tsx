@@ -233,7 +233,7 @@ function SharePost() {
             className="font-semibold"
             size="sm"
             onPress={() => void handleSubmit()}
-            isLoading={false}
+            isLoading={share.isLoading}
           >
             Share
           </Button>

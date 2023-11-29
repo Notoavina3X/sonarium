@@ -250,6 +250,7 @@ function CommentPost() {
                 variant="flat"
                 isDisabled={content.length == 0}
                 onPress={handleSend}
+                isLoading={createComment.isLoading}
               >
                 <Icon
                   icon="heroicons:paper-airplane-solid"

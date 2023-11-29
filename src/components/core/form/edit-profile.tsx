@@ -162,6 +162,7 @@ function EditProfile() {
             className="font-bold"
             isDisabled={!isChanged}
             onPress={() => void handleSubmit()}
+            isLoading={updateProfile.isLoading}
           >
             Save changes
           </Button>

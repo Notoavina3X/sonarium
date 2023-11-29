@@ -37,7 +37,9 @@ const MyApp = ({
         </Head>
         <NextUIProvider>
           <NextThemesProvider attribute="class" defaultTheme="system">
-            <main className={`${delaGothic.variable} font-sans antialiased`}>
+            <main
+              className={`${montserrat.variable} ${delaGothic.variable} font-sans antialiased`}
+            >
               <Toaster richColors theme={toastTheme} closeButton />
               {router.pathname.startsWith("/info") ||
               router.pathname.startsWith("/auth") ? (

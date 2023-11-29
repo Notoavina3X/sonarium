@@ -235,7 +235,7 @@ function UpdatePost() {
             className="font-semibold"
             size="sm"
             onPress={() => void handleSubmit()}
-            isLoading={false}
+            isLoading={update.isLoading}
           >
             Save
           </Button>
