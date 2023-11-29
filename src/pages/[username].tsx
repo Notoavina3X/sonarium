@@ -36,6 +36,7 @@ import { isEditingAtom } from "@/store";
 import EditProfile from "@/components/core/form/edit-profile";
 import { useAtom } from "jotai";
 import ErrorIllustration from "@/components/global/error-illustration";
+import Link from "next/link";
 
 const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   username,
@@ -78,12 +79,25 @@ const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
           >
             <Icon icon="solar:arrow-left-linear" />
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">{getProfile.data.name}</h1>
-            <span className="text-xs text-foreground-500">
-              {getProfile.data.postsCount}{" "}
-              {getPlural(getProfile.data.postsCount, "Post", "Posts")}
-            </span>
+          <div className="flex w-full items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold">{getProfile.data.name}</h1>
+              <span className="text-xs text-foreground-500">
+                {getProfile.data.postsCount}{" "}
+                {getPlural(getProfile.data.postsCount, "Post", "Posts")}
+              </span>
+            </div>
+            <Button
+              as={Link}
+              href={"/bookmark"}
+              isIconOnly
+              size="lg"
+              variant="light"
+              className="text-2xl"
+              aria-label="bookmark"
+            >
+              <Icon icon="solar:bookmark-linear" />
+            </Button>
           </div>
         </div>
       </Navbar>

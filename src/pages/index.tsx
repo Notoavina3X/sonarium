@@ -27,7 +27,7 @@ export default function Feed() {
             "flex",
             "justify-center",
           ],
-          tabList: ["w-2/3"],
+          tabList: ["w-full", "md:w-2/3"],
           tab: ["text-lg", "font-bold", "h-10"],
           panel: ["py-0"],
         }}
