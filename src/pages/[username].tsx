@@ -41,6 +41,7 @@ import Link from "next/link";
 const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   username,
 }) => {
+  const { data: sessionData } = useSession();
   const getProfile = api.profile.getByUsername.useQuery({ username });
 
   const router = useRouter();
@@ -87,17 +88,19 @@ const Profile: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
                 {getPlural(getProfile.data.postsCount, "Post", "Posts")}
               </span>
             </div>
-            <Button
-              as={Link}
-              href={"/bookmark"}
-              isIconOnly
-              size="lg"
-              variant="light"
-              className="text-2xl"
-              aria-label="bookmark"
-            >
-              <Icon icon="solar:bookmark-linear" />
-            </Button>
+            {sessionData?.user.username === getProfile.data.username && (
+              <Button
+                as={Link}
+                href={"/bookmarks"}
+                isIconOnly
+                size="lg"
+                variant="light"
+                className="-mt-1 text-2xl"
+                aria-label="bookmark"
+              >
+                <Icon icon="solar:bookmark-linear" />
+              </Button>
+            )}
           </div>
         </div>
       </Navbar>
