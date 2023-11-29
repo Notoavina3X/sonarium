@@ -2,7 +2,7 @@ import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { NextUIProvider } from "@nextui-org/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import type { AppProps, AppType } from "next/app";
+import type { AppProps } from "next/app";
 import { api } from "@/utils/api";
 import "@/styles/globals.css";
 import { Toaster } from "sonner";
@@ -37,9 +37,7 @@ const MyApp = ({
         </Head>
         <NextUIProvider>
           <NextThemesProvider attribute="class" defaultTheme="system">
-            <main
-              className={`${montserrat.variable} ${delaGothic.variable} font-sans antialiased`}
-            >
+            <main className={`${delaGothic.variable} font-sans antialiased`}>
               <Toaster richColors theme={toastTheme} closeButton />
               {router.pathname.startsWith("/info") ||
               router.pathname.startsWith("/auth") ? (
